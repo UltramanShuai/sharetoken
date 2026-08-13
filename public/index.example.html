@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2563eb">
+<meta name="description" content="TokenPool - 大模型 API 额度共享平台">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<title>TokenPool</title>
+<script src="./supabase-js.js" onerror="window.supabaseLoadFailed=true"></script>
+<style>:root{--primary:#2563eb;--primary-2:#1d4ed8;--primary-soft:#eff6ff;--bg:#f5f7fa;--card:#fff;--surface:#f8fafc;--text:#172033;--dim:#667085;--border:#dfe3ea;--border-soft:#edf0f4;--danger:#dc2626;--ok:#16835b;--warn:#b76e00;--radius:8px;--shadow-sm:0 1px 2px rgba(16,24,40,.04);--shadow-lg:0 16px 40px rgba(16,24,40,.16)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+/* 顶栏 */
+.topbar{background:#fff;color:var(--text);padding:13px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40;border-bottom:1px solid var(--border)}
+.topbar h1{font-size:17px;font-weight:750;letter-spacing:0;display:flex;align-items:center;gap:8px}
+.topbar .user{font-size:13px;display:flex;align-items:center;gap:12px}
+.topbar .user span{color:var(--dim);padding:4px 0}
+/* 按钮 */
+.btn{min-height:34px;border:1px solid var(--border);border-radius:6px;padding:7px 14px;background:#fff;color:#344054;font-size:13px;cursor:pointer;font-weight:650;transition:background .15s,border-color .15s,color .15s;letter-spacing:0;white-space:nowrap}
+.btn:hover{background:#f8fafc;border-color:#c9d0db}.btn:focus-visible{outline:3px solid rgba(37,99,235,.18);outline-offset:1px}.btn:disabled{cursor:not-allowed;opacity:.55}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-2);border-color:var(--primary-2)}
+.btn-ghost{background:#fff;color:#475467}.btn-ghost:hover{background:#f2f4f7}
+.btn-danger{background:#fff;color:var(--danger);border-color:#fecaca}.btn-danger:hover{background:#fef2f2;border-color:#fca5a5}
+.btn-small{min-height:30px;padding:5px 10px;font-size:12px}
+/* 布局 */
+.container{max-width:1120px;margin:24px auto;padding:0 24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.card h2{font-size:15px;font-weight:750;margin-bottom:14px;display:flex;align-items:center;gap:8px;letter-spacing:0}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.section-head h2{margin-bottom:0}
+/* 表单 */
+.form-row{margin-bottom:14px}
+.form-row label{display:block;font-size:12px;font-weight:600;color:var(--dim);margin-bottom:5px}
+.form-row input,.form-row select{width:100%;min-height:40px;padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;outline:none;background:#fff;transition:border-color .15s,box-shadow .15s}
+.form-row input:focus,.form-row select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+.form-row .hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.5}
+/* 登录 */
+.auth-wrap{max-width:400px;margin:8vh auto;animation:fadeUp .25s ease}.auth-wrap .card{box-shadow:0 8px 28px rgba(16,24,40,.08);border-radius:8px;padding:28px 30px}
+.logo{text-align:center;margin-bottom:26px}
+.logo .icon{font-size:38px;display:block;margin-bottom:10px}
+.logo h1{font-size:24px;font-weight:800;color:var(--primary)}
+.logo p{color:var(--dim);font-size:13px;margin-top:6px}
+.auth-switch{text-align:center;margin-top:16px;font-size:13px;color:var(--dim)}
+.auth-switch a{color:var(--primary);cursor:pointer;font-weight:600}
+.w-full{width:100%}
+/* Tab */
+.tab-bar{display:flex;flex-wrap:nowrap;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--border);padding:0 2px;overflow-x:auto;scrollbar-width:none}.tab-bar::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;min-height:40px;padding:9px 14px;font-size:13px;cursor:pointer;border:none;background:none;color:#667085;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:650;transition:background .15s,color .15s,border-color .15s;border-radius:6px 6px 0 0;white-space:nowrap;letter-spacing:0}
+.tab:hover{color:var(--primary);background:var(--primary-soft)}.tab.active{color:var(--primary);border-bottom-color:var(--primary);background:var(--primary-soft)}
+.tab-content{display:none;animation:fadeUp .25s ease}.tab-content.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* 列表行 */
+.key-row{display:grid;grid-template-columns:minmax(150px,170px) minmax(0,1fr) minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 14px;border:1px solid var(--border-soft);border-radius:6px;margin-bottom:8px;background:#fff}
+.key-row:hover{border-color:#cfd6e0;background:#fcfdff}
+.key-provider{font-weight:700;font-size:14px}
+.key-provider .note{font-weight:400;color:var(--dim);font-size:12px;margin-top:2px}
+.key-url{font-size:12px;color:var(--dim);word-break:break-all}
+.key-time{font-size:11px;color:#a5adc0}
+.key-value{font-family:ui-monospace,Consolas,monospace;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.key-actions{display:flex;gap:6px;justify-content:flex-end}
+/* 徽章 */
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0;vertical-align:1px}
+.badge-healthy,.badge-active{background:#e6f9f0;color:#0d9668}.badge-degraded{background:#fef3dd;color:#c07a08}.badge-down{background:#fdeaea;color:#d93036}.badge-unknown{background:#f0f1f6;color:var(--dim)}.badge-paused{background:#f0f1f6;color:var(--dim)}.badge-disabled{background:#f0f1f6;color:#9aa1b5}.badge-expired{background:#fef3dd;color:#c07a08}
+/* 空状态 */
+.empty{text-align:center;color:var(--dim);padding:44px 0;font-size:13px;line-height:1.8}.empty.pulse{animation:pulse 1.2s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}.spinner{width:26px;height:26px;border:3px solid #e4e7f2;border-top-color:var(--primary);border-radius:50%;margin:0 auto 10px;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+/* 模态框 */
+.modal-mask{position:fixed;inset:0;background:rgba(16,24,40,.48);display:none;align-items:center;justify-content:center;z-index:50}
+.modal-mask.show{display:flex}
+.modal{background:#fff;border-radius:8px;width:500px;max-width:92vw;padding:24px 26px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:pop .18s ease-out}
+@keyframes pop{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
+/* ⚠️ 尊重操作系统减少动效偏好：把逐帧动画/过渡降级为瞬时 */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.001ms !important;animation-iteration-count:1 !important;transition-duration:0.001ms !important;scroll-behavior:auto !important}
+  .spinner{animation:none !important;border-top-color:var(--border)}
+  .pulse{animation:none !important;opacity:1 !important}
+  .btn:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+}
+/* 屏幕阅读器专用隐藏：视觉上不见，语义可达 */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+/* toast */
+#toast{position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-14px);background:#1f2937;color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:550;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:99;box-shadow:var(--shadow-lg)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.error{background:#b42318}#toast.success{background:#067647}#toast.info{background:#1f2937}
+/* 统计卡片 */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:6px;padding:14px 16px;position:relative;overflow:hidden}
+.stat-card .label{font-size:12px;color:var(--dim);font-weight:500}
+.stat-card .value{font-size:22px;font-weight:780;margin-top:5px;color:#1d4ed8;overflow-wrap:anywhere}
+/* 进度条 */
+.progress{height:8px;background:#eef0f7;border-radius:6px;overflow:hidden;margin-top:10px}
+.progress i{display:block;height:100%;background:var(--primary);border-radius:6px;transition:width .4s ease}
+.mono{font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.hint{font-size:12px;color:var(--dim);margin-top:4px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+/* 调用示例 */
+.example-block{margin-bottom:10px;border:1px solid var(--border-soft);border-radius:6px;background:#fafbfc;overflow:hidden}
+.example-head{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border-soft);background:#f5f7fb;font-size:12px;color:var(--dim)}
+.example-tag{font-weight:650;color:var(--text);letter-spacing:0}
+.example-block pre{margin:0;padding:10px 12px;background:transparent;border-radius:0;white-space:pre-wrap;word-break:break-all;font-size:12px;line-height:1.55;color:#1d2939;max-height:240px;overflow-y:auto}
+.example-block pre code{font-family:inherit;background:transparent;padding:0}
+@media(max-width:640px){.example-block pre{font-size:11px;padding:9px 10px;max-height:200px}}
+/* 移动端 */
+@media(max-width:640px){
+  .container{max-width:100%;padding:0 16px;margin:16px auto}
+  .topbar{padding:12px 16px;flex-wrap:wrap;gap:8px}
+  .topbar h1{font-size:15px}
+  .topbar .user{font-size:12px;flex-wrap:wrap}
+  .card{padding:15px 16px;margin-bottom:10px;border-radius:8px}
+  .card h2{font-size:14px;margin-bottom:10px}
+  .two-col{grid-template-columns:1fr;gap:8px}
+  .tab-bar{gap:2px;overflow-x:auto;padding:0 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.tab-bar::-webkit-scrollbar{display:none}
+  .tab{padding:8px 9px;font-size:12px;white-space:nowrap}
+  .btn{padding:8px 14px;font-size:12px}
+  .btn-small{padding:4px 9px;font-size:11px}
+  .form-row{margin-bottom:10px}
+  .form-row label{font-size:11px}
+  .form-row input,.form-row select{font-size:13px;padding:8px 12px}
+  .modal{width:calc(100vw - 24px);max-width:none;max-height:90vh;overflow-y:auto;padding:18px}
+  .mono{font-size:11px;line-height:1.5;word-break:break-all;padding:8px 10px!important}
+  #gatewayUrl,#newPkeyValue{font-size:10px;padding:8px 10px!important;line-height:1.5}
+  .key-row{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:12px 14px}.key-actions .btn{flex:1 1 auto}
+  .key-provider{font-size:13px;width:100%}
+  .key-url{font-size:11px;word-break:break-all;width:100%;line-height:1.4}
+  .key-time{font-size:10px;width:100%}
+  .key-actions{width:100%;justify-content:flex-start;flex-wrap:wrap;gap:5px}
+  .stat-card{padding:12px 14px}
+  .stat-card .value{font-size:19px}
+  .stat-card .label{font-size:11px}
+  .auth-wrap{max-width:100%;padding:0 16px}
+  .badge{font-size:10px;padding:2px 7px}
+  .hint{font-size:11px}
+  p{font-size:12px}
+  #pointsBalance,#contribStats{grid-template-columns:1fr!important;gap:10px!important}
+  .modal h3{font-size:15px}
+}</style>
+</head>
+<body>
+<div id="bootMsg" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#f5f7fa"><div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:32px 42px;text-align:center;box-shadow:0 8px 28px rgba(16,24,40,.08)"><div style="font-size:34px;margin-bottom:10px" aria-hidden="true">🔑</div><div id="bootTitle" style="font-size:15px;color:#172033;font-weight:650">页面加载中…</div><div id="bootHint" style="font-size:12px;color:#667085;margin-top:8px">如果长时间无响应，请刷新页面</div></div></div>
+<div id="toast" role="alert" aria-live="polite" aria-atomic="true"></div>
+<div id="authView" style="display:none">
+  <div class="auth-wrap">
+    <div class="logo"><div class="icon" aria-hidden="true">🔑</div><h1>TokenPool</h1><p>大模型 API 额度共享平台</p></div>
+    <div class="card">
+      <button class="btn w-full" onclick="githubLogin()" style="background:#24292e;color:#fff;margin-bottom:8px">🐙 用 GitHub 登录</button>
+      <button class="btn w-full" onclick="googleLogin()" style="background:#4285f4;color:#fff;margin-bottom:14px">🔵 用 Google 登录</button>
+      <div style="text-align:center;font-size:12px;color:var(--dim);margin:22px 0 18px;letter-spacing:1px">— 或使用邮箱 —</div>
+      <div id="emailForm">
+        <div class="form-row" id="emailModeRow" style="display:none">
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-small" id="modeLoginBtn" onclick="setAuthMode('login')" style="flex:1 1 0;background:var(--primary);color:#fff">登录</button>
+            <button class="btn btn-small" id="modeSignupBtn" onclick="setAuthMode('signup')" style="flex:1 1 0;background:#f0f0f0;color:var(--text)">注册</button>
+          </div>
+        </div>
+        <div class="form-row"><label for="email">邮箱</label><input type="email" id="email" placeholder="you@example.com" autocomplete="email"></div>
+        <div class="form-row"><label for="password">密码</label><input type="password" id="password" placeholder="至少 6 位" autocomplete="current-password"></div>
+        <div class="form-row" id="turnstileRow" style="display:none"><label for="turnstileWidget">人机验证</label><div id="turnstileWidget" style="min-height:65px"></div></div>
+        <div class="form-row" id="otpRow" style="display:none"><label for="otpCode">邮箱验证码（6位）</label><div style="display:flex;gap:8px"><input id="otpCode" placeholder="6位验证码" maxlength="6" style="flex:1"><button class="btn btn-small" id="otpBtn" onclick="resendOtp()" style="white-space:nowrap">重新发送</button></div><div class="hint">验证码已发送，10分钟内有效</div></div>
+        <button class="btn btn-primary w-full" id="authBtn" onclick="submitAuth()">登 录</button>
+        <div id="forgotRow" style="text-align:right;margin-top:20px"><a href="javascript:forgotPassword()" style="font-size:12px;color:var(--primary)">忘记密码？</a></div>
+      </div>
+      <p style="font-size:11px;color:#9ca3af;margin-top:16px;line-height:1.6">贡献的 Key 须符合对应服务商条款；部分服务商禁止共享额度，请自行确认。平台不对 Key 的合规性承担责任。</p>
+    </div>
+  </div>
+</div>
+<div id="mainView" style="display:none">
+  <header class="topbar" role="banner">
+    <h1><span aria-hidden="true">🔑</span> TokenPool</h1>
+    <nav class="user" aria-label="账号操作"><span id="userEmail" style="display:none"></span><button class="btn btn-ghost btn-small" onclick="logout()">退出</button></nav>
+  </header>
+  <div class="container">
+    <div class="tab-bar" role="tablist" aria-label="主功能区">
+      <button class="tab active" role="tab" id="tab-btn-keys" aria-selected="true" aria-controls="tab-keys" onclick="switchTab('keys')"><span aria-hidden="true">🗝️</span> 我的 Keys</button>
+      <button class="tab" role="tab" id="tab-btn-pool" aria-selected="false" aria-controls="tab-pool" onclick="switchTab('pool')"><span aria-hidden="true">🌊</span> 公共池</button>
+      <button class="tab" role="tab" id="tab-btn-pkey" aria-selected="false" aria-controls="tab-pkey" onclick="switchTab('pkey')"><span aria-hidden="true">🔑</span> 平台 Key</button>
+      <button class="tab" role="tab" id="tab-btn-points" aria-selected="false" aria-controls="tab-points" onclick="switchTab('points')"><span aria-hidden="true">💎</span> 积分</button>
+      <button class="tab" role="tab" id="tab-btn-usage" aria-selected="false" aria-controls="tab-usage" onclick="switchTab('usage')"><span aria-hidden="true">📊</span> 用量</button>
+    </div>
+    <main id="mainContent" role="main">
+    <div id="tab-keys" class="tab-content active" role="tabpanel" aria-labelledby="tab-btn-keys" tabindex="0">
+      <div class="card">
+        <div class="section-head"><h2>我的 API Keys</h2><button class="btn btn-primary btn-small" onclick="openKeyModal()">+ 新增</button></div>
+        <div id="keyList"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+    </div>
+    <div id="tab-pool" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-pool" tabindex="0">
+      <div class="card">
+        <div class="section-head"><h2>池水位</h2></div>
+        <div id="poolStats" class="stat-grid"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="section-head"><h2>可加入的模型商与模型</h2></div>
+        <p class="hint" style="margin-bottom:10px">公共池按「模型商 + 模型」粒度准入：下方列出的模型可贡献赚分，系数即积分汇率。其他官方 Key 仍可保存自用，但暂不能加入公共池。</p>
+        <div id="allowedProviders" style="display:flex;flex-direction:column;gap:6px"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="section-head"><h2>我的贡献</h2><button class="btn btn-primary btn-small" onclick="openContribModal()">+ 贡献额度</button></div>
+        <div id="contribList"><div class="empty">暂无贡献记录</div></div>
+      </div>
+    </div>
+    <div id="tab-pkey" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-pkey" tabindex="0">
+      <div class="card">
+        <p style="color:var(--dim);font-size:13px;margin-bottom:14px">每个用户只有一把平台 Key，可重置但旧 Key 会立即失效。Key 明文加密保存，可随时点击「显示」查看。</p>
+        <div class="section-head"><h2>我的平台 Key</h2><span id="pkeyActions"></span></div>
+        <div id="pkeyList"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+      <div class="card">
+        <h2>调用地址</h2>
+        <div style="display:flex;gap:8px;align-items:stretch;margin-top:6px"><div class="mono" id="gatewayUrl" style="flex:1;padding:10px 12px;background:#f5f7fb;border-radius:8px;word-break:break-all"></div><button class="btn btn-small" onclick="copyGatewayUrl()" style="white-space:nowrap">复制</button></div>
+        <p class="hint">将此地址填入任何 OpenAI 兼容工具，Authorization 使用你的平台 Key。</p>
+      </div>
+      <div class="card">
+        <h2>调用示例</h2>
+        <p class="hint" style="margin-bottom:14px">以下示例直接复制可用：将 <code>pk_xxx</code> 替换为你上方显示的平台 Key，<code>model</code> 替换为公共池当前可调用的模型名。</p>
+        <div id="pkeyExamples">
+          <div class="example-block">
+            <div class="example-head"><span class="example-tag">curl</span><button class="btn btn-small" onclick="copyPkeyExample('exCurl')">复制</button></div>
+            <pre class="mono" id="exCurl" aria-label="curl 调用示例"></pre>
+          </div>
+          <div class="example-block">
+            <div class="example-head"><span class="example-tag">Python (openai SDK)</span><button class="btn btn-small" onclick="copyPkeyExample('exPy')">复制</button></div>
+            <pre class="mono" id="exPy" aria-label="Python 调用示例"></pre>
+          </div>
+          <div class="example-block">
+            <div class="example-head"><span class="example-tag">OpenAI 官方 SDK（通用）</span><button class="btn btn-small" onclick="copyPkeyExample('exSdk')">复制</button></div>
+            <pre class="mono" id="exSdk" aria-label="OpenAI SDK 调用示例"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tab-usage" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-usage" tabindex="0">
+      <div class="card">
+        <h2>我的用量</h2>
+        <p class="hint" style="margin-bottom:14px">通过平台 Key 调用公共池的统计（成功调用，流水保留 90 天）</p>
+        <div id="usageStats" class="stat-grid"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="section-head"><h2>按模型分布</h2></div>
+        <div id="usageByModel"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="section-head"><h2>最近调用</h2></div>
+        <div id="usageRecent"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+    </div>
+    <div id="tab-points" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-points" tabindex="0">
+      <div class="card">
+        <h2>积分概览</h2>
+        <p class="hint" style="margin-bottom:14px">赚：贡献的 Key 被使用时按模型系数得积分。花：使用公共池消耗积分（花 = 赚 × 2）。注册送 10万。</p>
+        <div id="pointsBalance" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+      <div class="card">
+        <h2>等级体系</h2>
+        <p class="hint" style="margin-bottom:14px">累计贡献 token 越多等级越高，每日使用上限越大（1000万 ~ 5亿）。</p>
+        <div id="tierList"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+      <div class="card">
+        <h2>我的贡献统计</h2>
+        <p class="hint" style="margin-bottom:14px">你贡献的 Key 被使用后的累计收益与调用统计。</p>
+        <div id="contribStats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+      <div class="card">
+        <h2>积分流水</h2>
+        <p class="hint" style="margin-bottom:14px">赚/花按类型汇总展示，逐笔明细折叠收起（最近 20 笔）。</p>
+        <div id="ledgerList"><div class="empty pulse"><div class="spinner"></div>加载中…</div></div>
+      </div>
+    </div>
+    </main>
+  </div>
+</div>
+<div class="modal-mask" id="keyModal" onclick="if(event.target===this)closeKeyModal()" role="dialog" aria-modal="true" aria-labelledby="keyModalTitle" aria-hidden="true">
+  <div class="modal">
+    <h3 id="keyModalTitle">新增 Key</h3>
+    <input type="hidden" id="editKeyId">
+    <div class="form-row">
+      <label for="fProviderSel">提供商 *</label>
+      <select id="fProviderSel" onchange="onProviderChange()">
+        <option value="">— 请选择 —</option>
+        <option value="__custom" data-url="">自定义（仅自用，不能贡献）</option>
+      </select>
+      <input id="fProvider" placeholder="自定义提供商名称" style="display:none;margin-top:8px">
+    </div>
+    <div class="form-row"><label for="fBaseUrl">Base URL</label><input id="fBaseUrl" placeholder="https://api.example.com/v1"></div>
+    <div class="form-row"><label for="fApiKey">API Key *</label><input id="fApiKey" type="password" placeholder="sk-..." autocomplete="new-password" spellcheck="false"></div>
+    <div class="form-row"><label for="fNote">备注</label><input id="fNote" placeholder="用途、到期时间等"></div>
+    <div class="modal-actions"><button class="btn" onclick="closeKeyModal()">取消</button><button class="btn btn-primary" onclick="saveKey()">保存</button></div>
+  </div>
+</div>
+<div class="modal-mask" id="contribModal" onclick="if(event.target===this)closeContribModal()" role="dialog" aria-modal="true" aria-labelledby="contribModalTitle" aria-hidden="true">
+  <div class="modal">
+    <h3 id="contribModalTitle">贡献额度到公共池</h3>
+    <p id="contribModalMsg" class="hint" style="margin:-8px 0 14px;display:none"></p>
+    <div class="form-row"><label for="cKeyId">选择 Key *</label><select id="cKeyId" onchange="refreshContribModels()"><option value="">— 请选择 —</option></select></div>
+    <div class="form-row">
+      <label for="cModel">模型 *（必选）</label>
+      <select id="cModel" onchange="updateContribSubmitState()"><option value="">请选择要贡献的模型</option></select>
+      <div class="hint">只能从可入池模型中选择（rate_rules 配置）；同一 Key 可贡献多个模型</div>
+    </div>
+    <div class="form-row"><label for="cCap">每日上限（万 token）</label><input id="cCap" type="number" placeholder="不限" min="1" step="0.1"><div class="hint">每天最多被使用的量，每日零点后自动重置</div></div>
+    <div class="two-col">
+      <div class="form-row"><label for="cTotalCap">合计上限（万 token）</label><input id="cTotalCap" type="number" placeholder="不限" min="1" step="0.1"><div class="hint">累计总量，用满自动停止并撤回</div></div>
+      <div class="form-row"><label for="cExpires">到期时间（可选）</label><input id="cExpires" type="datetime-local"></div>
+    </div>
+    <p class="hint">只贡献所选模型；限制均可选，留空=不限制</p>
+    <div class="modal-actions"><button class="btn" onclick="closeContribModal()">取消</button><button class="btn btn-primary" id="contribSubmitBtn" onclick="saveContrib()">确认贡献</button></div>
+  </div>
+</div>
+<div class="modal-mask" id="pkeyModal" onclick="if(event.target===this)closePkeyModal()" role="dialog" aria-modal="true" aria-labelledby="pkeyModalTitle" aria-hidden="true">
+  <div class="modal">
+    <h3 id="pkeyModalTitle">平台 Key 已生成</h3>
+    <p style="font-size:13px;color:var(--dim);margin-bottom:10px">请复制保存（已加密保存，之后可随时查看）：</p>
+    <div class="mono" id="newPkeyValue" tabindex="-1" style="padding:12px;background:#f5f7fb;border-radius:8px;word-break:break-all;user-select:all"></div>
+    <div class="modal-actions"><button class="btn" onclick="closePkeyModal()">稍后复制（可随时查看）</button><button class="btn btn-primary" onclick="copyNewPkey()">复制并关闭</button></div>
+  </div>
+</div>
+<div class="modal-mask" id="resetPwdModal" onclick="if(event.target===this)closeResetPwdModal()" role="dialog" aria-modal="true" aria-labelledby="resetPwdTitle" aria-hidden="true">
+  <div class="modal" style="width:420px">
+    <h3 id="resetPwdTitle">🔒 重置密码</h3>
+    <p id="resetPwdStep1" style="font-size:13px;color:var(--dim);margin-bottom:14px">点击下方按钮，系统会向你的邮箱发送重置链接。</p>
+    <div id="resetPwdStep2" style="display:none">
+      <p style="font-size:13px;color:var(--dim);margin-bottom:14px">链接已生效，请输入新密码（至少 6 位）。</p>
+      <div class="form-row"><label for="newPassword">新密码</label><input type="password" id="newPassword" placeholder="至少 6 位" autocomplete="new-password" minlength="6"></div>
+      <div class="form-row"><label for="newPassword2">确认密码</label><input type="password" id="newPassword2" placeholder="再输入一次" autocomplete="new-password" minlength="6"></div>
+    </div>
+    <!-- ⚠️ v5.4：独立 Turnstile widget，不复用位于 modal 后方的主表单 widget；reset 流程需独立 token -->
+    <div class="form-row" id="resetPwdTurnstileRow" style="display:none"><label for="resetPwdTurnstileWidget">人机验证</label><div id="resetPwdTurnstileWidget" style="min-height:65px"></div></div>
+    <p id="resetPwdHint" class="hint" style="display:none"></p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeResetPwdModal()">取消</button>
+      <button class="btn btn-primary" id="resetPwdBtn" onclick="doResetPwd()">发送重置链接</button>
+    </div>
+  </div>
+</div>
+<script>
+// TokenPool v4 - 每用户一把启用中的平台 Key / 模型级贡献 / 积分与等级
+const SB_URL='__SUPABASE_URL__';
+const SB_KEY='__SUPABASE_PUBLISHABLE_KEY__';
+// ⚠️ v5.5：单一处理源 — 显式声明 PKCE flow 让 SDK 接管 callback URL（?code=...&type=recovery）。
+//   之前双源（detectSessionInUrl=true 默认 + 手动 handlePasswordReset 同时 exchangeCodeForSession/setSession）
+//   会触发双兑换 / 重复 setSession / boot() 竞态。明确 flowType:'pkce' + detectSessionInUrl:true
+//   → SDK 的 _initialize() 在初始化时自动 exchangeCodeForSession，触发 PASSWORD_RECOVERY 事件；
+//   onAuthStateChange 单源处理弹窗，handlePasswordReset() 整段删除。
+//   resetPasswordForEmail 也仅在 flowType='pkce' 时生成 code_challenge → 同一 origin 必然 PKCE 返回。
+const sb=window.supabase.createClient(SB_URL,SB_KEY,{
+  auth: { flowType: 'pkce', detectSessionInUrl: true }
+});
+const GATEWAY=location.origin+'/v1';
+const TIER_NAMES={1:'L1 青铜',2:'L2 白银',3:'L3 黄金',4:'L4 钻石'};
+const VERIFIED_PROVIDER_KEYS=new Set(['minimax','deepseek','xiaomi','zhipu','moonshot','qwen']);
+const PROVIDER_BASE_URLS={minimax:'https://api.minimaxi.com/v1',deepseek:'https://api.deepseek.com/v1',xiaomi:'https://token-plan-cn.xiaomimimo.com/v1',zhipu:'https://open.bigmodel.cn/api/paas/v4',moonshot:'https://api.moonshot.cn/v1',qwen:'https://dashscope.aliyuncs.com/compatible-mode/v1'};
+let currentUserId=null,myKeys=[],revealedKeys={},allowedModels=[],rateRuleModels=[],myPkey=null,revealPkeyTimer=null,pkeyBusy=false,keyBusy=false,contribBusy=false,keyUrlTouched=false;
+function toast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='show'+(t?' '+t:'');setTimeout(()=>{e.className=''},2800)}
+function checkAuthError(err){if(err&&(err.status===401||(err.message&&err.message.includes('JWT')))){toast('会话已过期','info');sb.auth.signOut();showView('auth');document.getElementById('emailModeRow').style.display='block';currentUserId=null;return true}return false}
+let authMode='login';
+function setAuthMode(mode){
+  authMode=mode;
+  const isLogin=mode==='login';
+  document.getElementById('modeLoginBtn').style.background=isLogin?'var(--primary)':'#f0f0f0';
+  document.getElementById('modeLoginBtn').style.color=isLogin?'#fff':'var(--text)';
+  document.getElementById('modeSignupBtn').style.background=isLogin?'#f0f0f0':'var(--primary)';
+  document.getElementById('modeSignupBtn').style.color=isLogin?'var(--text)':'#fff';
+  document.getElementById('authBtn').textContent=isLogin?'登 录':'发送验证码';
+  document.getElementById('otpRow').style.display='none';
+  otpPendingEmail=null;
+  if(turnstileWidgetId!==null&&window.turnstile){window.turnstile.remove(turnstileWidgetId);turnstileWidgetId=null;}
+  turnstileToken=null;
+  // ⚠️ v5.4：登录 / 注册模式都需 Turnstile challenge（Cloudflare token single-use 300s）。
+  //   之前的实现只在 signup 模式预加载 widget，导致登录模式在 Supabase Auth CAPTCHA 启用
+  //   时传递 null token，被 Supabase Auth 直接拒绝。
+  document.getElementById('turnstileRow').style.display='block';
+  // 幂等加载 widget：脚本未加载则加载，已加载则 setTimeout 0 套用 render
+  scheduleTurnstileRender();
+}
+async function submitAuth(){
+  const e=document.getElementById('email').value.trim(),p=document.getElementById('password').value;
+  if(!e||!p)return toast('请填写邮箱和密码','error');
+  if(p.length<6)return toast('密码至少6位','error');
+  if(!/^\S+@\S+\.\S+$/.test(e))return toast('邮箱格式不正确','error');
+  const badDomains=['tempmail','10minutemail','guerrillamail','mailinator','throwaway','yopmail','trashmail'];
+  const domain=e.split('@')[1]||'';
+  if(badDomains.some(d=>domain.includes(d)))return toast('不支持临时邮箱','error');
+  const b=document.getElementById('authBtn');b.disabled=true;
+  try{
+    if(authMode==='signup'){
+      if(!otpPendingEmail||otpPendingEmail!==e){
+        if(!turnstileToken){
+          document.getElementById('turnstileRow').style.display='block';
+          renderTurnstile();
+          toast('请先完成人机验证，再点击发送验证码','info');
+          b.disabled=false;return;
+        }
+        // ⚠️ v5.4：不再预验证 token（Cloudflare token single-use 300s）。token 仅交 Supabase Auth 一次。
+        //    Supabase Auth 内部消费 token 后，下次 Auth 调用需新 token。
+        const{data,error}=await sb.auth.signInWithOtp({email:e, options:{shouldCreateUser:true, captchaToken:turnstileToken}});
+        // 不论成功/失败：重置 token + widget，避免下个调用误传已消费 token
+        resetTurnstile();
+        if(error)throw error;
+        otpPendingEmail=e;
+        document.getElementById('otpRow').style.display='block';
+        document.getElementById('otpCode').value='';
+        document.getElementById('otpCode').focus();
+        document.getElementById('authBtn').textContent='确认注册';
+        startOtpCooldown();
+        toast('验证码已发送到邮箱','success');
+        b.disabled=false;return;
+      }
+      const code=document.getElementById('otpCode').value.trim();
+      if(!code||code.length!==6)return toast('请输入6位验证码','error');
+      // ⚠️ v5.4：verifyOtp 使用全新 token；widget 在 signInWithOtp 后被 reset，用户必须重新交互
+      //    若 turnstileToken 为空（已被 reset），要求重新验证
+      if(!turnstileToken){toast('请重新完成人机验证','error');document.getElementById('turnstileRow').style.display='block';renderTurnstile();return;}
+      const{data:vData,error:vError}=await sb.auth.verifyOtp({email:e,token:code,type:'signup', options:{captchaToken:turnstileToken}});
+      resetTurnstile();
+      if(vError)throw vError;
+      // ⚠️ 注册时输入的密码必须真正设置到账户；signInWithOtp+verifyOtp 不会保存 password，需用 updateUser 显式绑定，否则后续 signInWithPassword 直接失败
+      try{const{error:pwdErr}=await sb.auth.updateUser({password:p});if(pwdErr)throw pwdErr}catch(pwdErr){toast('密码设置失败：'+(pwdErr&&pwdErr.message||'请重试'),'error');throw pwdErr}
+      toast('注册成功','success');
+    }else{
+      // ⚠️ v5.4：登录模式也需 Turnstile 校验。Supabase Auth CAPTCHA 启用时，null token 会
+      //    直接拒签；未启用时传 token 也会被 Supabase Auth 忽略（不会报错）。
+      if(!turnstileToken){
+        document.getElementById('turnstileRow').style.display='block';
+        renderTurnstile();
+        toast('请先完成人机验证','error');
+        b.disabled=false;return;
+      }
+      const lk='loginLock_'+e;const ld=JSON.parse(localStorage.getItem(lk)||'null');if(ld&&ld.until>Date.now()){const m=Math.ceil((ld.until-Date.now())/60000);return toast('已锁定，'+m+'分钟后重试','error')}
+      // ⚠️ v5.4：登录 signInWithPassword 也传 captchaToken（Supabase CAPTCHA 覆盖 sign-in）
+      const r=await sb.auth.signInWithPassword({email:e,password:p, options:{ captchaToken:turnstileToken }});
+      resetTurnstile();
+      if(r.error){const fk='loginFail_'+e;let f=parseInt(localStorage.getItem(fk)||'0',10)+1;localStorage.setItem(fk,String(f));if(f>=5){localStorage.setItem(lk,JSON.stringify({until:Date.now()+900000}));localStorage.removeItem(fk);toast('错误5次，锁定15分钟','error')}else{toast(r.error.message||'登录失败，剩余'+(5-f)+'次','error')}throw r.error}
+      localStorage.removeItem('loginFail_'+e);localStorage.removeItem(lk);
+      toast('登录成功','success');
+    }
+  }catch(e){toast(e.message||'操作失败','error')}
+  finally{b.disabled=false}
+}
+async function logout(){await sb.auth.signOut();toast('已退出','success')}
+
+async function googleLogin(){
+  try{const{data,error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin}});if(error)throw error}catch(e){toast(e.message||'Google\u767b\u5f55\u5931\u8d25','error')}
+}
+async function githubLogin(){
+  try{const{data,error}=await sb.auth.signInWithOAuth({provider:'github',options:{redirectTo:location.origin}});if(error)throw error}catch(e){toast(e.message||'GitHub\u767b\u5f55\u5931\u8d25','error')}
+}
+let otpPendingEmail=null,otpCooldown=0;
+let turnstileToken=null,turnstileWidgetId=null;
+// ⚠️ v5.4：重置密码 modal 需独立 Turnstile token/widget（不与主表单同 token）
+let resetPwdTurnstileToken=null,resetPwdTurnstileWidgetId=null;
+const TURNSTILE_SITEKEY='__TURNSTILE_SITEKEY__';
+
+// ⚠️ 幂等 Turnstile 脚本加载：主表单与 reset modal 复用同一 promise；
+//   反复调用 loadTurnstile() 不会重复 inject；加载失败时 toast 提示，记 loadError=true 避免无限重试给服务造成压力
+let turnstileScriptPromise = null;
+let turnstileScriptLoadError = false;
+function loadTurnstile(){
+  if (window.turnstile) return Promise.resolve();
+  if (turnstileScriptPromise) return turnstileScriptPromise;
+  if (turnstileScriptLoadError) return Promise.reject(new Error('turnstile-load-failed'));
+  turnstileScriptPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.async = true;
+    s.defer = true;
+    s.onload = () => { resolve(); };
+    s.onerror = () => {
+      turnstileScriptLoadError = true;
+      turnstileScriptPromise = null;
+      toast('人机验证服务加载失败，请检查网络', 'error');
+      reject(new Error('turnstile-load-failed'));
+    };
+    document.head.appendChild(s);
+  });
+  return turnstileScriptPromise;
+}
+
+// 幂等调度：保证 DOM 存在 + 脚本可用后才渲染 widget；多次调用不会重复 remove/render 抖动
+function scheduleTurnstileRender(){
+  // 控件已渲染 → noop
+  if (turnstileWidgetId !== null) return;
+  const el = document.getElementById('turnstileWidget');
+  if (!el) return;
+  if (turnstileScriptLoadError) return;
+  if (!window.turnstile) {
+    // 脚本后到 → 加载后重试渲染
+    loadTurnstile().then(() => {
+      // setTimeout 0 让 DOM 让出（避免重入）
+      setTimeout(renderTurnstileWidget, 0);
+    }).catch(() => { /* 已在 loadTurnstile() 内 toast */ });
+    return;
+  }
+  // 脚本已可用，但 widget 可能尚未渲染（如初次 showView('auth') 路径）
+  setTimeout(renderTurnstileWidget, 0);
+}
+
+function renderTurnstileWidget(){
+  if (turnstileWidgetId !== null) return;
+  const el = document.getElementById('turnstileWidget');
+  if (!el || !window.turnstile) return;
+  try {
+    turnstileWidgetId = window.turnstile.render(el, {
+      sitekey: TURNSTILE_SITEKEY,
+      callback: (token) => { turnstileToken = token; },
+      'error-callback': () => { turnstileToken = null; toast('人机验证失败请重试', 'error'); },
+      'expired-callback': () => {
+        // ⚠️ v5.4：token 过期需强制重新验证，避免下次 Auth 调用传过期 token
+        turnstileToken = null; toast('人机验证已过期，请重新验证', 'info');
+      }
+    });
+  } catch (e) {
+    console.error('turnstile render:', e);
+  }
+}
+
+function renderTurnstile(){ scheduleTurnstileRender(); }
+
+// ⚠️ v5.4：重置 turnstileToken 与 widget；Cloudflare token single-use 300s，避免下次误传已消费 token
+function resetTurnstile(){turnstileToken=null;try{if(window.turnstile&&turnstileWidgetId!==null){window.turnstile.reset(turnstileWidgetId);}}catch{}}
+
+// ⚠️ v5.4：重置密码 modal 需独立 Turnstile token/widget（不与主表单同 token）；
+//   脚本加载是幂等的，丢失页面其它 widget 的 loadTurnstile() 状态；modal 关闭后必须移除 widget 防止幽灵 widget
+// ⚠️ v5.5：脚本晚到时（window.turnstile 未加载）loadTurnstile() 注册 promise 回调；
+//   若 modal 在 onload 之前被 close，回调仍会在 onload 后执行 → 渲染到隐藏 DOM（幽灵 widget）。
+//   入口 + 加载 promise 回调都重验 modal 仍 open 且 resetPwdStep===1；任一不满足直接 return。
+function renderResetPwdTurnstile(){
+  // 重验 1：modal 仍打开 + step 仍为 1（防止 close 后脚本 onload 触发幽灵 widget）
+  const modalEl = document.getElementById('resetPwdModal');
+  if (!modalEl || !modalEl.classList.contains('show') || resetPwdStep !== 1) return;
+  if (resetPwdTurnstileWidgetId !== null) return;
+  const el = document.getElementById('resetPwdTurnstileWidget');
+  if (!el) return;
+  if (turnstileScriptLoadError) {
+    // 脚本加载失败过，不再重试；不静默，给出提示
+    toast('人机验证服务加载失败，请检查网络', 'error');
+    return;
+  }
+  if (!window.turnstile) {
+    // 脚本未加载 → 等待（不反复 inject，与主表单共享同一 promise）
+    // 重验 2：onload 后再次检查 modal+step（关键防幽灵 widget 守卫）
+    loadTurnstile().then(() => {
+      // 再套一层 setTimeout(0)，让调用栈与 onload 解耦；
+      // 此时仍可能已被 close，必须在 renderResetPwdTurnstile 入口再次校验
+      setTimeout(renderResetPwdTurnstile, 0);
+    }).catch(() => {});
+    return;
+  }
+  try {
+    resetPwdTurnstileWidgetId = window.turnstile.render(el, {
+      sitekey: TURNSTILE_SITEKEY,
+      callback: (token) => { resetPwdTurnstileToken = token; },
+      'error-callback': () => { resetPwdTurnstileToken = null; },
+      'expired-callback': () => { resetPwdTurnstileToken = null; }
+    });
+  } catch (e) {
+    console.error('resetPwd turnstile render:', e);
+  }
+}
+function resetResetPwdTurnstile(){resetPwdTurnstileToken=null;try{if(window.turnstile&&resetPwdTurnstileWidgetId!==null){window.turnstile.reset(resetPwdTurnstileWidgetId);}}catch{}}
+function removeResetPwdTurnstile(){try{if(window.turnstile&&resetPwdTurnstileWidgetId!==null){window.turnstile.remove(resetPwdTurnstileWidgetId);}}catch{}resetPwdTurnstileWidgetId=null;resetPwdTurnstileToken=null;}
+function startOtpCooldown(){otpCooldown=60;const btn=document.getElementById('otpBtn');btn.disabled=true;const t=setInterval(()=>{otpCooldown--;btn.textContent=otpCooldown>0?otpCooldown+'s\u540e\u91cd\u53d1':'\u91cd\u65b0\u53d1\u9001';if(otpCooldown<=0){btn.disabled=false;clearInterval(t)}},1000)}
+async function resendOtp(){if(otpCooldown>0)return;const e=document.getElementById('email').value.trim();if(!e)return;// ⚠️ v5.4：重发要求新 token；上一次 signInWithOtp 已 resetTurnstile()，必须重新人机验证
+if(!turnstileToken){document.getElementById('turnstileRow').style.display='block';renderTurnstile();toast('请重新完成人机验证，再点重发','info');return;}
+try{const{error}=await sb.auth.signInWithOtp({email:e, options:{shouldCreateUser:true, captchaToken:turnstileToken}});resetTurnstile();if(error)throw error;startOtpCooldown();toast('\u5df2\u91cd\u65b0\u53d1\u9001','success')}catch(e){toast(e.message,'error')}}
+
+// ⚠️ 密码重置改站内 modal：避免 prompt() 被浏览器拦截 / 移动端体验差
+let resetPwdStep = 1; // 1=发送链接 2=输入新密码
+// ⚠️ 模态框焦点 + aria-hidden 管理：open 时记录 lastFocus 并聚焦首个 input，
+// close 时还原焦点；aria-hidden 跟随 show class 同步切换（避免屏幕阅读器读到隐藏内容）
+const modalLastFocus = {};
+function openModalA11y(id, focusSelector){
+  modalLastFocus[id] = document.activeElement;
+  const el = document.getElementById(id);
+  if (el) el.setAttribute('aria-hidden', 'false');
+  if (focusSelector) { const f = el && el.querySelector(focusSelector); if (f) setTimeout(() => f.focus(), 80); }
+}
+function closeModalA11y(id){
+  const el = document.getElementById(id);
+  if (el) el.setAttribute('aria-hidden', 'true');
+  const prev = modalLastFocus[id];
+  if (prev && typeof prev.focus === 'function') { try { prev.focus(); } catch {} }
+  delete modalLastFocus[id];
+}
+function openResetPwdModal(step){
+  resetPwdStep = step || 1;
+  const m = document.getElementById('resetPwdModal');
+  const s1 = document.getElementById('resetPwdStep1');
+  const s2 = document.getElementById('resetPwdStep2');
+  const btn = document.getElementById('resetPwdBtn');
+  const hint = document.getElementById('resetPwdHint');
+  if(resetPwdStep === 1){
+    s1.style.display = 'block';
+    s2.style.display = 'none';
+    btn.textContent = '发送重置链接';
+    btn.disabled = false;
+    if(hint){hint.style.display='none';hint.textContent='';}
+    // ⚠️ v5.4：modal 内独立 Turnstile widget + token；不复用主表单 widget（被遮挡且 token 可能已被消费）
+    document.getElementById('resetPwdTurnstileRow').style.display='block';
+    // 不重复 inject 脚本（renderTurnstile 已在 DOMContentLoaded 加载）；仅渲染 widget
+    setTimeout(renderResetPwdTurnstile, 50);
+  } else {
+    s1.style.display = 'none';
+    s2.style.display = 'block';
+    btn.textContent = '保存新密码';
+    btn.disabled = false;
+    if(hint){hint.style.display='none';hint.textContent='';}
+    setTimeout(()=>{const np=document.getElementById('newPassword');if(np)np.focus();}, 80);
+  }
+  m.classList.add('show');
+  openModalA11y('resetPwdModal', resetPwdStep === 2 ? '#newPassword' : '#resetPwdBtn');
+}
+function closeResetPwdModal(){
+  const m = document.getElementById('resetPwdModal');
+  m.classList.remove('show');
+  closeModalA11y('resetPwdModal');
+  const np = document.getElementById('newPassword'); if(np) np.value = '';
+  const np2 = document.getElementById('newPassword2'); if(np2) np2.value = '';
+  const hint = document.getElementById('resetPwdHint'); if(hint){hint.style.display='none';hint.textContent='';}
+  // ⚠️ v5.4：清理 modal 独立的 Turnstile widget，避免 widget 闭包占内存且下次 open 重新渲染
+  removeResetPwdTurnstile();
+  const tsRow = document.getElementById('resetPwdTurnstileRow'); if(tsRow) tsRow.style.display='none';
+}
+// ⚠️ v5.6：PKCE state 参数 — 防钓鱼/防 CSRF。
+//   送邮件时生成随机 state 存 sessionStorage，同时拼进 redirectTo 的 query 串；
+//   Supabase SDK 会保留附加 query 串，只补 code/type，最终链接形如
+//     <origin>/?state=<our_state>&code=<supabase>&type=recovery
+//   回调入口 (PASSWORD_RECOVERY 事件) 比对 URL 中的 state 与 sessionStorage 中的 state；
+//   不匹配 → 拒绝走重置流程（防止别处构造的伪造链接在已登录会话里被默默 setSession）。
+//   sessionStorage 仅同源同会话可见；钓鱼站不同源 → 必然为空 → 拒绝。
+const RESET_STATE_KEY = 'tp.reset.state';
+function generateResetState(){
+  // 128 bit 随机 → base64url（避免 + / = 出现在 URL 里被特殊处理）
+  const bytes = new Uint8Array(16);
+  (window.crypto || window.msCrypto).getRandomValues(bytes);
+  let s = '';
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  const b64 = btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  sessionStorage.setItem(RESET_STATE_KEY, b64);
+  return b64;
+}
+function readResetStateFromUrl(){
+  try {
+    const sp = new URLSearchParams(location.search);
+    return sp.get('state') || null;
+  } catch { return null; }
+}
+function consumeResetState(){
+  try { sessionStorage.removeItem(RESET_STATE_KEY); } catch {}
+}
+function validateResetState(){
+  const sent = sessionStorage.getItem(RESET_STATE_KEY);
+  const got = readResetStateFromUrl();
+  // 任意一为缺失都视为失效；存在但不一致也失效。
+  if (!sent || !got || sent !== got) return { ok: false, reason: !sent ? 'no-session-state' : (!got ? 'no-url-state' : 'mismatch') };
+  return { ok: true };
+}
+
+async function doResetPwd(){
+  const btn = document.getElementById('resetPwdBtn');
+  const hint = document.getElementById('resetPwdHint');
+  if(resetPwdStep === 1){
+    const e = document.getElementById('email').value.trim();
+    if(!e){toast('请先填写邮箱','error');document.getElementById('email').focus();return;}
+    if(!/^\S+@\S+\.\S+$/.test(e))return toast('邮箱格式不正确','error');
+    // ⚠️ v5.4：resetPasswordForEmail 需新 captchaToken（独立 modal widget 提供）
+    if(!resetPwdTurnstileToken){
+      toast('请先完成人机验证','error');
+      renderResetPwdTurnstile();
+      return;
+    }
+    btn.disabled = true;
+    try{
+      // ⚠️ v5.6：送邮件同时生成 state；拼到 redirectTo query。
+      //   sessionStorage 存原值，回调时与 URL state 比对。
+      const state = generateResetState();
+      const redirectTo = location.origin + '/?state=' + encodeURIComponent(state);
+      const{error} = await sb.auth.resetPasswordForEmail(e, { redirectTo, captchaToken:resetPwdTurnstileToken });
+      // single-use：消费后立即重置 widget；下轮发送（如需）需重新验证
+      resetResetPwdTurnstile();
+      if(error) throw error;
+      hint.style.display='block';hint.textContent='重置链接已发送到 ' + e + '，请在邮件中打开链接后回到此页面输入新密码。';
+      hint.style.color = 'var(--ok)';
+      toast('重置链接已发送','success');
+    }catch(err){
+      resetResetPwdTurnstile();
+      hint.style.display='block';hint.textContent = err.message || '发送失败';
+      hint.style.color = 'var(--danger)';
+      toast(err.message || '发送失败','error');
+    }finally{btn.disabled = false;}
+  } else {
+    const np = document.getElementById('newPassword').value;
+    const np2 = document.getElementById('newPassword2').value;
+    if(!np || np.length < 6){hint.style.display='block';hint.textContent='密码至少 6 位';hint.style.color='var(--danger)';return;}
+    if(np !== np2){hint.style.display='block';hint.textContent='两次输入不一致';hint.style.color='var(--danger)';return;}
+    btn.disabled = true;
+    try{
+      const{error} = await sb.auth.updateUser({ password: np });
+      if(error) throw error;
+      toast('密码已修改','success');
+      closeResetPwdModal();
+    }catch(err){
+      hint.style.display='block';hint.textContent = err.message || '修改失败';
+      hint.style.color='var(--danger)';
+    }finally{btn.disabled = false;}
+  }
+}
+// 保留旧函数名以兼容旧调用
+async function forgotPassword(){
+  const e = document.getElementById('email').value.trim();
+  if(!e){toast('请先填写邮箱','error');document.getElementById('email').focus();return;}
+  if(!/^\S+@\S+\.\S+$/.test(e))return toast('邮箱格式不正确','error');
+  openResetPwdModal(1);
+}
+// ⚠️ v5.5：移除 v5.4 的双源手动 handlePasswordReset()。原因：
+//   - createClient 已配置 flowType:'pkce' + detectSessionInUrl:true；SDK 在 _initialize() 中
+//     自动识别 ?code=...&type=recovery 并 exchangeCodeForSession，触发 PASSWORD_RECOVERY 事件
+//   - 手动 exchangeCodeForSession / setSession 与 SDK 自处理竞态（exchangeCodeForSession 内部
+//     也 await initializePromise），导致双 setSession / 双弹窗 / 偶发失败
+//   - 单一处理源 = onAuthStateChange 中仅 PASSWORD_RECOVERY 事件触发 applySession({recovery:true})
+//   - 普通 SIGNED_IN / INITIAL_SESSION 不再开 reset modal（不再依赖 passwordRecoveryPending 标志）
+
+function switchTab(n){document.querySelectorAll('.tab').forEach((t,i)=>{const ns=['keys','pool','pkey','points','usage'];t.classList.toggle('active',ns[i]===n);t.setAttribute('aria-selected',ns[i]===n?'true':'false');t.tabIndex=ns[i]===n?0:-1});document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));const panel=document.getElementById('tab-'+n);panel.classList.add('active');if(n!=='keys')maskAllSecrets();if(n==='pool')loadPool();if(n==='pkey')loadPkey();if(n==='points')loadPoints();if(n==='usage')loadUsage();if(n==='keys')loadKeys();// ⚠️ 切 tab 后容齐头景观：避免在长列表底部切 tab 后看到的是空白顶
+  const tb=document.querySelector('.tab-bar');if(tb){const r=tb.getBoundingClientRect();if(r.top<0||r.bottom>window.innerHeight)tb.scrollIntoView({block:'start',behavior:'auto'});}}
+function showView(n){
+  document.getElementById('bootMsg').style.display='none';
+  document.getElementById('authView').style.display=n==='auth'?'block':'none';
+  document.getElementById('mainView').style.display=n==='main'?'block':'none';
+  // ⚠️ 首次切到登录页必须主动渲染 Turnstile widget；之前依赖 setAuthMode，SIGNED_OUT / checkAuthError /
+  //   初始 onAuthStateChange 走 `showView('auth')` 并不轮转 setAuthMode，widget 一直隐藏。
+  //   scheduleTurnstileRender() 幂等：重复调用不会抖动；脚本后到也能赶上首次渲染。
+  if (n === 'auth') {
+    document.getElementById('emailModeRow').style.display = 'block';
+    document.getElementById('turnstileRow').style.display = 'none';
+    // ⚠️ 不在这里 scheduleTurnstileRender()：进入页面就发 Cloudflare 评估请求是浪费且不必要。改为懒加载，只在用户点击登录/发送验证码等动作且 token 缺失时才渲染。
+  }
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function badgeHtml(s,lmap){const m={healthy:'healthy',degraded:'degraded',down:'down',unknown:'unknown',active:'active',paused:'paused',throttled:'degraded',expired:'expired',disabled:'disabled',withdrawn:'disabled'};const c=m[s]||'unknown';const l=Object.assign({healthy:'健康',degraded:'异常',down:'不可用',unknown:'待检测',active:'贡献中',paused:'已暂停',throttled:'已限流',expired:'已过期',disabled:'已停用',withdrawn:'已撤回'},lmap||{})[s]||s;return '<span class="badge badge-'+c+'">'+l+'</span>'}
+function errorHtml(msg,retry){return '<div class="empty">'+esc(msg)+(retry?'<br><button class="btn btn-small" style="margin-top:10px" onclick="'+retry+'">重新加载</button>':'')+'</div>'}
+function maskAllSecrets(){revealedKeys={};revealedPkey=null;if(revealPkeyTimer){clearTimeout(revealPkeyTimer);revealPkeyTimer=null}const pv=document.getElementById('newPkeyValue');if(pv)pv.textContent='';if(document.getElementById('keyList'))renderKeys()}
+function setButtonsDisabled(rootId,disabled){const root=document.getElementById(rootId);if(root)root.querySelectorAll('button').forEach(b=>{b.disabled=disabled})}
+async function copyText(t){try{await navigator.clipboard.writeText(t)}catch{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');document.body.removeChild(a)}toast('已复制','success')}
+function copyGatewayUrl(){const v=document.getElementById('gatewayUrl').textContent.trim();if(!v)return toast('地址为空','error');copyText(v)}
+async function ensureAllowedModels(){if(allowedModels.length)return allowedModels;const{data,error}=await sb.from('allowed_models').select('provider_key,display_name,allowed_hosts,model_pattern,note').eq('enabled',true).order('display_name');if(error){checkAuthError(error);throw error}allowedModels=data||[];return allowedModels}
+// 从 base_url 主机推断已启用 provider_key（仅用于历史遗留 Key 编辑回填）
+function inferProviderFromUrl(url){let host='';try{host=new URL(url||'').hostname.toLowerCase()}catch{}if(!host)return null;const m=allowedModels.find(a=>(a.allowed_hosts||[]).map(h=>String(h).toLowerCase()).includes(host));return m?m.provider_key:null}
+// 判定 key 不可贡献的明确原因（用户可见）；返回 null 表示可贡献
+function keyIneligibleReason(k){if(!k)return'Key 不存在';if(k.deleted_at)return'Key 已删除';if(k.health_status==='down')return'Key 当前不可用';let host='';try{host=new URL(k.base_url||'').hostname.toLowerCase()}catch{return'Base URL 无法识别主机';}const m=allowedModels.find(a=>(a.allowed_hosts||[]).map(h=>String(h).toLowerCase()).includes(host));if(!m)return'该地址未在公共池白名单（仅可自用）';if(!VERIFIED_PROVIDER_KEYS.has(m.provider_key))return'该平台暂未通过现网核验（仅可自用）';return null;}
+function keyProviderConfig(key){const reason=keyIneligibleReason(key);if(reason)return null;let host='';try{host=new URL(key.base_url||'').hostname.toLowerCase()}catch{}return allowedModels.find(a=>VERIFIED_PROVIDER_KEYS.has(a.provider_key)&&(a.allowed_hosts||[]).map(h=>String(h).toLowerCase()).includes(host))||null}
+async function populateProviderSelect(selected){const rows=await ensureAllowedModels();const s=document.getElementById('fProviderSel');const custom='<option value="__custom">自定义（仅自用，不能贡献）</option>';// ⚠️ 只展示 enabled=true 的行；禁用 provider 不再作为"可贡献"出现在下拉
+s.innerHTML='<option value="">— 请选择 —</option>'+rows.map(r=>{const verified=VERIFIED_PROVIDER_KEYS.has(r.provider_key);return '<option value="'+esc(r.provider_key)+'" data-url="'+esc(PROVIDER_BASE_URLS[r.provider_key]||'')+'">'+esc(r.display_name)+(verified?'':'（仅自用）')+'</option>'}).join('')+custom;if(selected&&Array.from(s.options).some(o=>o.value===selected)){s.value=selected}else if(selected){/* selected 在启用列表里缺失 → 调用方需自行 fallback 到 __custom */}}
+async function loadKeys(){const l=document.getElementById('keyList');const{data,error}=await sb.from('llm_keys').select('id,provider,base_url,key_preview,note,health_status,last_check_at,last_latency_ms,created_at,deleted_at').order('created_at',{ascending:false});if(error){if(checkAuthError(error))return;l.innerHTML=errorHtml('我的 Keys 加载失败','loadKeys()');return}myKeys=(data||[]).filter(k=>!k.deleted_at);renderKeys()}
+function renderKeys(){const l=document.getElementById('keyList');if(!l)return;if(!myKeys.length){l.innerHTML='<div class="empty">还没有 Key<br><button class="btn btn-primary btn-small" style="margin-top:10px" onclick="openKeyModal()">新增 Key</button></div>';return}l.innerHTML=myKeys.map(r=>{const rv=revealedKeys[r.id];const sh=rv?rv:(r.key_preview||'****');const checked=r.last_check_at?new Date(r.last_check_at).toLocaleString():'尚未检测';const latency=r.last_latency_ms!=null?' · '+Number(r.last_latency_ms)+'ms':'';return '<div class="key-row"><div class="key-provider">'+esc(r.provider)+' '+badgeHtml(r.health_status)+(r.note?'<div class="note">'+esc(r.note)+'</div>':'')+'</div><div class="key-url">'+esc(r.base_url||'—')+'<br><span class="key-time">'+checked+latency+'</span></div><div class="key-value"><span>'+esc(sh)+'</span><button class="btn btn-small" onclick="revealKey(\''+r.id+'\')">'+(rv?'隐藏':'显示')+'</button><button class="btn btn-small" onclick="copyKey(\''+r.id+'\')">复制</button></div><div class="key-actions"><button class="btn btn-small" onclick="editKey(\''+r.id+'\')">编辑</button><button class="btn btn-danger btn-small" onclick="delKey(\''+r.id+'\')">删除</button></div></div>'}).join('')}
+async function revealKey(id){if(revealedKeys[id]){delete revealedKeys[id];renderKeys();return}const{data,error}=await sb.rpc('reveal_llm_key',{p_key_id:id});if(error){if(checkAuthError(error))return;return toast(error.message,'error')}revealedKeys[id]=data;renderKeys();setTimeout(()=>{if(revealedKeys[id]){delete revealedKeys[id];renderKeys()}},30000)}
+async function copyKey(id){let k=revealedKeys[id];if(!k){const{data,error}=await sb.rpc('reveal_llm_key',{p_key_id:id});if(error){if(checkAuthError(error))return;return toast(error.message,'error')}k=data}copyText(k)}
+// 统一 Base URL 校验：http/https 必需；剥离尾部斜杠；拒绝 userinfo / query / hash
+function normalizeBaseUrl(raw){const s=String(raw||'').trim();if(!s)return{ok:false,msg:'Base URL 不能为空'};let u;try{u=new URL(s)}catch{return{ok:false,msg:'Base URL 格式不正确'}};if(u.protocol!=='http:'&&u.protocol!=='https:')return{ok:false,msg:'Base URL 必须以 http:// 或 https:// 开头'};if(u.username||u.password)return{ok:false,msg:'Base URL 不能包含用户名/密码'};if(u.search)return{ok:false,msg:'Base URL 不能包含查询参数'};if(u.hash)return{ok:false,msg:'Base URL 不能包含锚点'};u.hash='';u.search='';const clean=u.toString().replace(/\/+$/,'');return{ok:true,url:clean,host:u.hostname.toLowerCase()};}
+</script>
+<script>
+function onProviderChange(){const s=document.getElementById('fProviderSel'),c=document.getElementById('fProvider'),b=document.getElementById('fBaseUrl');if(s.value==='__custom'){c.style.display='block';c.focus();return}c.style.display='none';c.value='';const o=s.options[s.selectedIndex];// ⚠️ 手动修改过 Base URL 后，重选同 provider 不覆盖；首次打开 / 空 URL 才自动填充
+if(o&&o.dataset.url&&(!keyUrlTouched||!b.value)){b.value=o.dataset.url;keyUrlTouched=false;}}
+function clearKeySecretFields(){const ak=document.getElementById('fApiKey');if(ak)ak.value='';const c=document.getElementById('fProvider');if(c)c.value='';}
+async function openKeyModal(){if(keyBusy)return;if(myKeys.length>=20)return toast('最多添加 20 个 Key','error');try{await populateProviderSelect()}catch{return toast('提供商配置加载失败','error')}document.getElementById('keyModalTitle').textContent='新增 Key';document.getElementById('editKeyId').value='';document.getElementById('fProviderSel').value='';document.getElementById('fProvider').value='';document.getElementById('fProvider').style.display='none';document.getElementById('fBaseUrl').value='';document.getElementById('fApiKey').value='';document.getElementById('fApiKey').placeholder='sk-...';document.getElementById('fNote').value='';keyUrlTouched=false;document.getElementById('keyModal').classList.add('show');openModalA11y('keyModal','#fProviderSel');}
+function closeKeyModal(){document.getElementById('keyModal').classList.remove('show');closeModalA11y('keyModal');clearKeySecretFields();keyUrlTouched=false;}
+async function editKey(id){if(keyBusy)return;const r=myKeys.find(k=>k.id===id);if(!r)return;try{await populateProviderSelect()}catch{return toast('提供商配置加载失败','error')}document.getElementById('keyModalTitle').textContent='编辑 Key';document.getElementById('editKeyId').value=id;const s=document.getElementById('fProviderSel'),c=document.getElementById('fProvider');// ⚠️ 历史 provider 已不在启用列表时：优先从 base_url 推断，否则退回 __custom
+let selected=r.provider;if(!selected||!Array.from(s.options).some(o=>o.value===selected)){const inferred=inferProviderFromUrl(r.base_url);if(inferred&&Array.from(s.options).some(o=>o.value===inferred)){selected=inferred;}}if(selected&&Array.from(s.options).some(o=>o.value===selected)){s.value=selected;c.style.display='none';c.value='';}else{s.value='__custom';c.style.display='block';c.value=r.provider||'';}document.getElementById('fBaseUrl').value=r.base_url||'';keyUrlTouched=!!r.base_url;document.getElementById('fApiKey').value='';document.getElementById('fApiKey').placeholder='留空则保留原 Key';document.getElementById('fNote').value=r.note||'';document.getElementById('keyModal').classList.add('show');// ⚠️ v5.4：editKey 需同步 aria/focus；openKeyModal 已调，editKey 也必须调以保证“编辑”入口的可达性
+openModalA11y('keyModal','#fProviderSel');}
+async function saveKey(){if(keyBusy)return;const id=document.getElementById('editKeyId').value;if(!id&&myKeys.length>=20)return toast('最多添加 20 个 Key','error');const s=document.getElementById('fProviderSel');const pv=s.value==='__custom'?document.getElementById('fProvider').value.trim():s.value;const buRaw=document.getElementById('fBaseUrl').value.trim();const ak=document.getElementById('fApiKey').value.trim();const nt=document.getElementById('fNote').value.trim();if(!pv)return toast('请选择提供商','error');if(!buRaw)return toast('Base URL 不能为空','error');const norm=normalizeBaseUrl(buRaw);if(!norm.ok)return toast(norm.msg,'error');try{const wh=await ensureAllowedModels();if(!wh.some(a=>(a.allowed_hosts||[]).map(h=>String(h).toLowerCase()).includes(norm.host)))toast('该地址不在公共池白名单，这把 Key 仅可自用','info')}catch{return toast('提供商配置加载失败','error')}// ⚠️ 操作锁：避免重复点击导致重复提交
+keyBusy=true;const saveBtn=document.querySelector('#keyModal .btn-primary');if(saveBtn)saveBtn.disabled=true;try{if(id){// ⚠️ v5.2：update_llm_key 返回原子撤回的贡献条数（base_url 实际变更时触发）
+const{data:wdN,error}=await sb.rpc('update_llm_key',{p_id:id,p_provider:pv,p_base_url:norm.url,p_api_key:ak||null,p_note:nt});if(error)throw error;if(typeof wdN==='number'&&wdN>0){toast('已更新，'+wdN+' 条贡献已撤回（地址变更）','success');}else{toast('已更新','success');}}else{if(!ak)return toast('API Key 不能为空','error');const{error}=await sb.rpc('create_llm_key',{p_provider:pv,p_base_url:norm.url,p_api_key:ak,p_note:nt});if(error)throw error;toast('已保存','success')}closeKeyModal();await loadKeys()}catch(e){if(checkAuthError(e))return;toast(e.message||'保存失败','error')}finally{if(saveBtn)saveBtn.disabled=false;keyBusy=false;}}
+async function delKey(id){if(keyBusy)return;if(!confirm('删除此 Key 会同时撤回它所有未撤回的贡献（积分和历史调用记录保留）。确认删除？'))return;keyBusy=true;setButtonsDisabled('keyList',true);try{// ⚠️ v5.1：原子 RPC（owner 校验 + 撤回贡献 + soft-delete 一个事务）；client 不允许直写 llm_keys
+const{error:de}=await sb.rpc('delete_llm_key',{p_id:id});if(de){if(checkAuthError(de))return;return toast(de.message,'error')}delete revealedKeys[id];toast('已删除','success');await loadKeys()}catch(e){if(checkAuthError(e))return;toast(e.message||'删除失败','error')}finally{keyBusy=false;setButtonsDisabled('keyList',false);}}
+</script>
+<script>
+function fmtCap(n){n=Number(n||0);if(n>=1e8)return (n/1e8).toFixed(n%1e8===0?0:2)+'亿';if(n>=1e4)return (n/1e4).toFixed(n%1e4===0?0:2)+'万';return n.toLocaleString()}
+// ⚠️ 仅当 used >= cap 才显示 “已用满”；99.99% 不应该被 Math.round 拼成 100
+function ratioPct(used,cap){const u=Number(used||0),c=Number(cap||0);if(!c||c<=0)return null;const r=u/c*100;return r>=100?'100':(r<10?r.toFixed(1):Math.floor(r*10)/10).toString();}
+async function loadPool(){
+  const st=document.getElementById('poolStats'),cl=document.getElementById('contribList'),ap=document.getElementById('allowedProviders');
+  // ⚠️ 重新加载前清空 stale DOM，避免旧 spinners 与新内容叠加
+  st.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  cl.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  ap.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  try{const wl=(await ensureAllowedModels()).filter(w=>VERIFIED_PROVIDER_KEYS.has(w.provider_key));const{data:rr,error:rrError}=await sb.from('rate_rules').select('provider_key,model_pattern,coefficient').eq('enabled',true);const rmap={};if(!rrError){(rr||[]).forEach(r=>{const s=String(r.model_pattern||'');if(!s||s.includes('%')||s.includes('*'))return;(rmap[r.provider_key]=rmap[r.provider_key]||[]).push(r);});}ap.innerHTML=wl.length?wl.map(w=>{const models=(rmap[w.provider_key]||[]).slice().sort((a,b)=>String(a.model_pattern).localeCompare(String(b.model_pattern)));const chips=models.length?models.map(m=>'<span class="badge badge-unknown" style="padding:3px 8px;font-size:12px;margin:2px">'+esc(m.model_pattern)+' · 系数 '+Number(m.coefficient||1)+'</span>').join(' '):'<span class="hint">暂无已定价模型</span>';return '<div class="key-row"><div class="key-provider">'+esc(w.display_name)+'</div><div class="key-url" style="flex:2">'+chips+'</div></div>';}).join(''):errorHtml('暂无已核验的提供商')}catch(e){ap.innerHTML=errorHtml('提供商列表加载失败','loadPool()')}
+  const{data:sd,error:statsError}=await sb.rpc('pool_stats');
+  let poolStatsOk=false;if(statsError){if(checkAuthError(statsError))return;st.innerHTML=errorHtml('公共池统计加载失败','loadPool()')}
+  else if(sd&&sd.length){poolStatsOk=true;const r=sd[0];st.innerHTML='<div class="stat-card"><div class="label">已设置日上限</div><div class="value">'+Number(r.total_cap_tokens||0).toLocaleString()+'</div><div class="hint">不含未设置日上限的贡献</div></div>'
+    +'<div class="stat-card"><div class="label">今日实际消耗</div><div class="value">'+Number(r.used_today||0).toLocaleString()+'</div><div class="hint">含今日内已暂停或撤回的调用</div></div>'
+    +'<div class="stat-card"><div class="label">历史总消耗</div><div class="value">'+Number(r.total_used_tokens||0).toLocaleString()+'</div></div>'
+    +'<div class="stat-card"><div class="label">活跃贡献者</div><div class="value">'+Number(r.contributor_count||0).toLocaleString()+'</div></div>'
+    ;/* ============ 修：模型卡片独立加载，不再依赖 pool_stats 成功 —— stats 失败时仍展示模型列表，避免一块失败掩盖另一块可用功能 */}
+  else st.innerHTML=errorHtml('公共池统计暂无数据','loadPool()');
+  // /v1/models 独立加载：无论 pool_stats 是否成功都执行，各自的错误处理互不影响
+  try{const mr=await fetch(GATEWAY+'/models');if(!mr.ok)throw new Error('HTTP '+mr.status);const md=await mr.json();const models=(md.data||[]).map(m=>m.id);const ml=models.length?models.map(m=>'<span class="badge badge-healthy" style="margin:2px">'+esc(m)+'</span>').join(' '):'<span class="hint">暂无已入池模型</span>';st.insertAdjacentHTML('beforeend','<div class="stat-card" style="grid-column:1/-1"><div class="label">当前可调用模型</div><div style="margin-top:6px">'+ml+'</div></div>')}catch(e){st.insertAdjacentHTML('beforeend','<div class="stat-card" style="grid-column:1/-1"><div class="label">当前可调用模型</div><div class="hint" style="margin-top:6px;color:var(--danger)">模型列表加载失败</div></div>')}
+  const{data:mine,error:mineError}=await sb.from('pool_contributions').select('*').eq('user_id',currentUserId).order('created_at',{ascending:false});
+  if(mineError){if(checkAuthError(mineError))return;cl.innerHTML=errorHtml('贡献记录加载失败','loadPool()');return}
+  cl.innerHTML=mine&&mine.length?mine.map(x=>{const exp=x.expires_at?'<br>到期：'+new Date(x.expires_at).toLocaleString():'';const wd=x.status==='withdrawn'&&x.updated_at?'<br>撤回于：'+new Date(x.updated_at).toLocaleString():'';const dp=x.daily_cap_tokens&&x.daily_cap_tokens>0?ratioPct(x.used_today,x.daily_cap_tokens):null;const tp=x.total_cap_tokens&&x.total_cap_tokens>0?ratioPct(x.total_used_tokens,x.total_cap_tokens):null;const dayTxt=x.daily_cap_tokens?('每日 '+fmtCap(x.daily_cap_tokens)+' · 已用 '+fmtCap(x.used_today)+(dp!==null?('（'+dp+'%）'):'')+' · 每日 00:05 重置'):'每日不限 · 今日已用 '+fmtCap(x.used_today)+' · 每日 00:05 重置';const totTxt=x.total_cap_tokens?('合计 '+fmtCap(x.total_cap_tokens)+' · 已用 '+fmtCap(x.total_used_tokens)+(tp!==null?('（'+tp+'%）'):'')):'合计不限 · 累计 '+fmtCap(x.total_used_tokens);const hs=x.health_status?' '+badgeHtml(x.health_status):'';const dailyFull=dp!==null&&Number(x.used_today||0)>=Number(x.daily_cap_tokens||0);const totalFull=tp!==null&&Number(x.total_used_tokens||0)>=Number(x.total_cap_tokens||0);const dailyWarn=!dailyFull&&dp!==null&&Number(x.used_today||0)>=Number(x.daily_cap_tokens||0)*0.95;const totalWarn=!totalFull&&tp!==null&&Number(x.total_used_tokens||0)>=Number(x.total_cap_tokens||0)*0.95;const warn=dailyFull||totalFull?' <span class="badge badge-unknown">已用满</span>':(dailyWarn||totalWarn?' <span class="badge badge-degraded">即将用满</span>':'');let actions='<span class="hint">不可操作</span>';if(x.status==='active')actions='<button class="btn btn-small" onclick="toggleContrib(\''+x.id+'\',\'active\')">暂停</button><button class="btn btn-danger btn-small" onclick="delContrib(\''+x.id+'\')">撤回</button>';else if(x.status==='paused')actions='<button class="btn btn-small" onclick="toggleContrib(\''+x.id+'\',\'paused\')">恢复</button><button class="btn btn-danger btn-small" onclick="delContrib(\''+x.id+'\')">撤回</button>';else if(x.status==='throttled')actions='<button class="btn btn-small" onclick="toggleContrib(\''+x.id+'\',\'throttled\')">尝试启用</button><span class="hint">限流中，健康自动恢复</span><button class="btn btn-danger btn-small" onclick="delContrib(\''+x.id+'\')">撤回</button>';else if(x.status==='withdrawn'||x.status==='expired')actions='<button class="btn btn-small" onclick="openContribModal()">重新贡献</button>';return '<div class="key-row"><div class="key-provider">'+esc(x.model_pattern||'未指定模型')+' '+badgeHtml(x.status)+warn+hs+'</div><div class="key-url">'+dayTxt+exp+wd+'</div><div class="key-url">'+totTxt+'</div><div class="key-actions">'+actions+'</div></div>'}).join(''):'<div class="empty">暂无贡献记录</div>';
+}
+async function toggleContrib(id,st){if(contribBusy)return;if(!['active','paused','throttled'].includes(st))return toast('当前状态不能手动切换','error');const n=st==='active'?'paused':'active';contribBusy=true;setButtonsDisabled('contribList',true);try{// ⚠️ 改用 RPC：服务端校验 Key 健康/重复 active / 状态机
+const fn=n==='active'?'resume_contribution':'pause_contribution';const{error}=await sb.rpc(fn,{p_id:id});if(error){if(checkAuthError(error))return;if(error.message&&(error.message.includes('another active')||error.message.includes('duplicate')))return toast('该 Key 已有同模型的启用中贡献','error');return toast(error.message,'error');}toast(n==='active'?'已恢复':'已暂停','success');await loadPool();}catch(e){if(checkAuthError(e))return;toast(e.message||'操作失败','error');}finally{contribBusy=false;setButtonsDisabled('contribList',false);}}
+async function delContrib(id){if(contribBusy)return;if(!confirm('确认撤回这条贡献？累计积分和历史调用记录会保留。'))return;contribBusy=true;setButtonsDisabled('contribList',true);try{// ⚠️ 改用 RPC：客户端不再直写 pool_contributions
+const{error}=await sb.rpc('withdraw_contribution',{p_id:id});if(error){if(checkAuthError(error))return;return toast(error.message,'error');}toast('已撤回','success');await loadPool();}catch(e){if(checkAuthError(e))return;toast(e.message||'撤回失败','error');}finally{contribBusy=false;setButtonsDisabled('contribList',false);}}
+function refreshContribModels(){const kid=document.getElementById('cKeyId').value,sel=document.getElementById('cModel'),key=myKeys.find(k=>k.id===kid),cfg=key&&keyProviderConfig(key);sel.innerHTML='';if(!kid){sel.innerHTML='<option value="">请先选择 Key</option>';sel.disabled=true;}else if(!cfg){const reason=keyIneligibleReason(key);sel.innerHTML='<option value="">'+esc(reason||'该 Key 不能加入公共池')+'</option>';sel.disabled=true;}else{const provModels=rateRuleModels.filter(m=>m.provider_key===cfg.provider_key).sort((a,b)=>a.model_pattern.localeCompare(b.model_pattern));if(!provModels.length){sel.innerHTML='<option value="">该提供商的模型尚未配置汇率</option>';sel.disabled=true;}else{sel.innerHTML='<option value="">请选择模型</option>'+provModels.map(m=>'<option value="'+esc(m.model_pattern)+'">'+esc(m.model_pattern)+'（系数 '+Number(m.coefficient||1)+'）</option>').join('');sel.disabled=false;}}updateContribSubmitState();}
+function updateContribSubmitState(){const btn=document.getElementById('contribSubmitBtn');if(!btn)return;const kid=document.getElementById('cKeyId').value;const model=document.getElementById('cModel').value;const key=myKeys.find(k=>k.id===kid);const cfg=key&&keyProviderConfig(key);btn.disabled=!(kid&&model&&cfg);}
+function setContribMsg(text,kind){const el=document.getElementById('contribModalMsg');if(!el){return;}if(!text){el.style.display='none';el.textContent='';el.style.color='';return;}el.textContent=text;el.style.display='block';el.style.color=kind==='error'?'var(--danger)':(kind==='info'?'var(--warn)':'var(--dim)');}
+async function refreshMyKeysForContrib(){try{const{data,error}=await sb.from('llm_keys').select('id,provider,base_url,key_preview,note,health_status,deleted_at').order('created_at',{ascending:false});if(error){if(checkAuthError(error))throw error;throw error;}myKeys=(data||[]).filter(k=>!k.deleted_at);}catch(e){throw e;}}
+async function openContribModal(){if(contribBusy)return;try{await ensureAllowedModels();await refreshMyKeysForContrib();const{data,error}=await sb.from('rate_rules').select('provider_key,model_pattern,coefficient').eq('enabled',true);if(error)throw error;rateRuleModels=(data||[]).filter(m=>{const s=String(m.model_pattern||'');return s&&!s.includes('%')&&!s.includes('*');});}catch(e){if(checkAuthError(e))return;toast('贡献配置加载失败','error');return;}// ⚠️ 总是打开弹窗，在 modal 内用 inline 消息说明不可贡献原因
+document.getElementById('cKeyId').innerHTML='';document.getElementById('cModel').innerHTML='';document.getElementById('cCap').value='';document.getElementById('cTotalCap').value='';document.getElementById('cExpires').value='';document.getElementById('contribSubmitBtn').disabled=true;setContribMsg('');if(!myKeys.length){const sel=document.getElementById('cKeyId');sel.innerHTML='<option value="">还没有可贡献的 Key</option>';sel.disabled=true;setContribMsg('请先到「我的 Keys」添加一把 Key，再来贡献额度。','info');document.getElementById('contribModal').classList.add('show');// ⚠️ v5.4：cKeyId disabled 时不可 focus；聚焦提交钮（仍 disabled）→改聚焦 modal 标题占位不可 focus →聚焦取消按钮（可点）
+openModalA11y('contribModal','.modal-actions .btn');return;}const annotated=myKeys.map(k=>{const reason=keyIneligibleReason(k);const eligible=!reason;const label=esc(k.provider)+' · '+esc(k.key_preview||('Key '+k.id.slice(0,8)));return {k,reason,label,eligible};});const eligibleCount=annotated.filter(a=>a.eligible).length;const sel=document.getElementById('cKeyId');sel.innerHTML='<option value="">请选择 Key</option>'+annotated.map(a=>{if(a.eligible){return '<option value="'+a.k.id+'">'+a.label+'</option>';}return '<option value="" disabled>'+a.label+' — '+esc(a.reason)+'</option>';}).join('');sel.disabled=false;refreshContribModels();if(!eligibleCount){setContribMsg('当前账号下没有可贡献的 Key：'+(annotated[0]?annotated[0].reason:'暂无 Key')+'。可用的 Key 会出现在下拉列表中。','info');}document.getElementById('contribModal').classList.add('show');openModalA11y('contribModal','#cKeyId');}
+function closeContribModal(){document.getElementById('contribModal').classList.remove('show');closeModalA11y('contribModal');setContribMsg('');}
+async function saveContrib(){if(contribBusy)return;const btn=document.getElementById('contribSubmitBtn');btn.disabled=true;contribBusy=true;try{const{data:cnt,error:cntError}=await sb.from('pool_contributions').select('id').eq('user_id',currentUserId).eq('status','active');if(cntError){if(checkAuthError(cntError))return;return toast(cntError.message,'error');}if(cnt&&cnt.length>=5)return toast('最多 5 条启用中的贡献','error');const kid=document.getElementById('cKeyId').value,model=document.getElementById('cModel').value.trim();if(!kid)return toast('请选择 Key','error');if(!model)return toast('请选择模型','error');const key=myKeys.find(k=>k.id===kid),cfg=key&&keyProviderConfig(key);if(!key)return toast('Key 不存在','error');if(!cfg)return toast('这把 Key 不在公共池白名单','error');if(!rateRuleModels.some(m=>m.provider_key===cfg.provider_key&&m.model_pattern===model))return toast('所选模型与 Key 提供商不匹配','error');if(key.health_status==='down')return toast('这把 Key 当前不可用，请修复后再贡献','error');const capW=parseFloat(document.getElementById('cCap').value),tcW=parseFloat(document.getElementById('cTotalCap').value),exp=document.getElementById('cExpires').value;if(Number.isFinite(capW)&&capW<=0)return toast('每日上限必须大于 0','error');if(Number.isFinite(tcW)&&tcW<=0)return toast('合计上限必须大于 0','error');if(exp&&new Date(exp).getTime()<=Date.now())return toast('到期时间必须晚于当前时间','error');const W=10000;
+const params={p_key_id:kid,p_model_pattern:model,p_daily_cap_tokens:null,p_total_cap_tokens:null,p_expires_at:null};if(Number.isFinite(capW))params.p_daily_cap_tokens=Math.round(capW*W);if(Number.isFinite(tcW))params.p_total_cap_tokens=Math.round(tcW*W);if(exp)params.p_expires_at=new Date(exp).toISOString();// ⚠️ 改用 RPC：服务端校验 user_id、Key 所有者、limit，并授权使用 only allow RPC
+const{error}=await sb.rpc('create_contribution',params);if(error){if(checkAuthError(error))return;if(error.code==='23505'||(error.message&&error.message.includes('duplicate')))return toast('这把 Key 已贡献该模型','error');return toast(error.message||'贡献失败','error');}toast('贡献成功','success');closeContribModal();await loadPool();}catch(e){if(checkAuthError(e))return;toast(e.message||'贡献失败','error');}finally{btn.disabled=false;contribBusy=false;updateContribSubmitState();}}
+</script>
+<script>
+let revealedPkey=null;
+function newPoolKeyValue(){return 'pk_'+crypto.randomUUID().replace(/-/g,'')+crypto.randomUUID().replace(/-/g,'').slice(0,8)}
+function showNewPkey(plain,title){document.getElementById('pkeyModalTitle').textContent=title||'平台 Key 已生成';document.getElementById('newPkeyValue').textContent=plain;document.getElementById('pkeyModal').classList.add('show');revealedPkey=plain;// ⚠️ v5.4：#newPkeyValue 不可 focus（div）；聚焦可聚焦的“复制并关闭”按钮，让键盘用户进入主操作
+openModalA11y('pkeyModal','.modal-actions .btn-primary');}
+function closePkeyModal(){document.getElementById('pkeyModal').classList.remove('show');closeModalA11y('pkeyModal');document.getElementById('newPkeyValue').textContent='';revealedPkey=null;}
+// 渲染调用示例：使用当前页面 location.origin + '/v1' 作为 GATEWAY
+async function renderPkeyExamples(){
+  const url = GATEWAY;
+  let sampleModel = 'MiniMax-M3';
+  // 动态取当前池内可用模型，避免硬编码模型在池空/无此模型时复制后调用失败
+  try{const mr=await fetch(url+'/models');if(mr.ok){const md=await mr.json();const ids=(md.data||[]).map(m=>m.id);if(ids.length)sampleModel=ids[0];}}catch{}
+  // ⚠️ 使用占位 <YOUR_PLATFORM_KEY> 而非伪 key：复制后用户能识别哪些字段需替换；
+  // textContent 赋值保证不会被解析成 HTML，避免 XSS（占位符不含 < / > 也不会被误判）
+  const dummyKey = '<YOUR_PLATFORM_KEY>';
+  const curl = 'curl -sS -X POST "' + url + '/chat/completions" \\\n  -H "Authorization: Bearer ' + dummyKey + '" \\\n  -H "Content-Type: application/json" \\\n  -d \'{\n    "model": "' + sampleModel + '",\n    "messages": [\n      {"role": "system", "content": "You are a helpful assistant."},\n      {"role": "user", "content": "用一句话介绍 TokenPool"}\n    ],\n    "stream": true\n  }\'';
+  const py = 'from openai import OpenAI\n\nclient = OpenAI(\n    api_key="' + dummyKey + '",\n    base_url="' + url + '"\n)\n\nresp = client.chat.completions.create(\n    model="' + sampleModel + '",\n    messages=[\n        {"role": "system", "content": "You are a helpful assistant."},\n        {"role": "user", "content": "用一句话介绍 TokenPool"}\n    ],\n    stream=True,\n)\nfor chunk in resp:\n    delta = chunk.choices[0].delta.content\n    if delta:\n        print(delta, end="", flush=True)\nprint()';
+  const sdk = '// 任一 OpenAI 兼容 SDK（curl / Python / Node.js / Go）都可以设置 base_url + api_key 后调用：\n//   base_url = "' + url + '"\n//   api_key  = <平台 Key>\n// 常用开源 SDK：\n//   - Python:    pip install openai\n//   - Node.js:   npm i openai\n//   - Go:        go.dev/x/example/openai  /  github.com/sashabaranov/go-openai\n//   - CLI:       curl / httpie / openai-cli\n// 任意 HTTP 客户端都可以：POST /v1/chat/completions / /v1/models';
+  const e1 = document.getElementById('exCurl'); if(e1) e1.textContent = curl;
+  const e2 = document.getElementById('exPy'); if(e2) e2.textContent = py;
+  const e3 = document.getElementById('exSdk'); if(e3) e3.textContent = sdk;
+}
+function copyPkeyExample(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  // ！占位提示：真实 Key 不在这个页面里复制，这里只复制示例文本
+  //   示例中已统一使用 <YOUR_PLATFORM_KEY>，复制即原文
+  copyText(el.textContent);
+}
+async function loadPkey(){
+  renderPkeyExamples();
+  document.getElementById('gatewayUrl').textContent=GATEWAY;const list=document.getElementById('pkeyList'),acts=document.getElementById('pkeyActions');
+  // ⚠️ 清空 stale DOM，避免多个 spinner 同时出现或旧内容残留
+  list.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  acts.innerHTML='';
+  const{data:allPk,error}=await sb.from('pool_keys').select('id,label,daily_quota,used_today,status,created_at').eq('user_id',currentUserId).order('created_at',{ascending:false});
+  if(error){if(checkAuthError(error))return;list.innerHTML=errorHtml('平台 Key 加载失败','loadPkey()');return}
+  const pkArr=allPk||[],activePk=pkArr.find(k=>k.status==='active'),latestDisabled=pkArr.find(k=>k.status==='disabled');myPkey=activePk||latestDisabled||null;
+  if(!myPkey){list.innerHTML='<div class="empty">还没有平台 Key</div>';acts.innerHTML='<button class="btn btn-primary btn-small" onclick="createPkey()">生成平台 Key</button>';return}
+  let tierInfo=null,tierErr=null;// ⚠️ 「今日已用」必须与 gateway.mjs getUserUsedToday() 一致：汇总用户所有 pool_keys（含 disabled 历史 Key），不只算 active
+  const usedToday=pkArr.reduce((s,k)=>s+Number(k.used_today||0),0);
+  // ⚠️ 等级查询失败必须可见，不再沉默地装作 L1
+  try{const[{data:ct,error:ctError},{data:trs,error:tierError}]=await Promise.all([sb.rpc('get_my_contributed_tokens'),sb.from('reward_tiers').select('level,min_contributed_tokens,daily_quota,perks').order('level',{ascending:true})]);if(ctError)throw ctError;if(tierError)throw tierError;if(!trs||!trs.length)throw new Error('reward_tiers empty');let t=trs[0];for(const x of trs)if(Number(ct||0)>=Number(x.min_contributed_tokens))t=x;tierInfo=(TIER_NAMES[t.level]||('L'+t.level))+' · 日额度 '+Number(t.daily_quota).toLocaleString()+' token';}catch(e){tierErr=e;}
+  const pv=revealedPkey?revealedPkey:'pk_••••••••••••',isActive=myPkey.status==='active';
+  const notice=isActive?'':'<div style="grid-column:1/-1;padding:9px 11px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;color:#b42318;font-size:12px">当前没有启用中的平台 Key，调用会被拒绝。下面显示的是最近停用的一把。</div>';
+  // ⚠️ 等级加载失败时使用醒目红字而不是静默回退到硬编码 L1
+  const tierCell=tierInfo||'<span style="color:var(--danger);font-weight:650">等级数据加载失败</span>'+(tierErr?'<br><span class="hint">'+esc(tierErr.message||String(tierErr))+'</span>':'');
+  list.innerHTML=notice+'<div class="key-row pkey-row"><div class="key-provider">平台 Key '+badgeHtml(myPkey.status,{active:'启用中',disabled:'已停用'})+'</div><div class="key-url">'+tierCell+'</div><div class="key-url">今日已用 '+usedToday.toLocaleString()+' token · 每日 00:05 重置</div><div class="key-value"><span>'+esc(pv)+'</span><button class="btn btn-small" onclick="revealPkey()">'+(revealedPkey?'隐藏':'显示')+'</button><button class="btn btn-small" onclick="copyPkey()">复制</button></div><div class="key-actions"><button class="btn btn-small" onclick="togglePkey()">'+(isActive?'停用':'启用旧 Key')+'</button><button class="btn btn-danger btn-small" onclick="resetPkey()">生成新 Key</button></div></div>';
+  acts.innerHTML=isActive?'<span class="hint">1 把启用中</span>':'<button class="btn btn-primary btn-small" onclick="createPkey()">生成新 Key</button>';
+}
+async function revealPkey(){if(!myPkey)return;if(revealedPkey){revealedPkey=null;if(revealPkeyTimer)clearTimeout(revealPkeyTimer);revealPkeyTimer=null;return loadPkey()}const{data,error}=await sb.rpc('reveal_pool_key',{p_key_id:myPkey.id});if(error){if(checkAuthError(error))return;return toast(error.message.includes('not stored')?'这把旧 Key 没有保存可恢复明文，请生成新 Key':error.message,'error')}revealedPkey=data;await loadPkey();if(revealPkeyTimer)clearTimeout(revealPkeyTimer);revealPkeyTimer=setTimeout(()=>{revealedPkey=null;revealPkeyTimer=null;loadPkey()},30000)}
+async function copyPkey(){if(!myPkey)return;let k=revealedPkey;if(!k){const{data,error}=await sb.rpc('reveal_pool_key',{p_key_id:myPkey.id});if(error){if(checkAuthError(error))return;return toast(error.message.includes('not stored')?'这把旧 Key 没有保存可恢复明文，请生成新 Key':error.message,'error')}k=data}copyText(k)}
+async function createPkey(){if(pkeyBusy)return;pkeyBusy=true;try{const plain=newPoolKeyValue();const{error}=await sb.rpc('create_pool_key',{p_plain:plain});if(error){if(checkAuthError(error))return;if(error.code==='23505'||error.message.includes('pool_keys_one_per_user_active'))return toast('已有启用中的平台 Key，请使用“生成新 Key”重置','error');throw error}showNewPkey(plain);await loadPkey()}catch(e){toast(e.message||'生成失败','error')}finally{pkeyBusy=false}}
+async function resetPkey(){if(pkeyBusy)return;if(!confirm('生成新 Key 后，当前启用中的 Key 会立即失效；历史用量和积分保留。确认继续？'))return;pkeyBusy=true;try{const plain=newPoolKeyValue();const{error}=await sb.rpc('reset_pool_key',{p_plain:plain});if(error){if(checkAuthError(error))return;throw error}showNewPkey(plain,'平台 Key 已重置');await loadPkey()}catch(e){toast(e.message||'重置失败','error')}finally{pkeyBusy=false}}
+function copyNewPkey(){copyText(document.getElementById('newPkeyValue').textContent);closePkeyModal();}
+async function togglePkey(){if(!myPkey||pkeyBusy)return;pkeyBusy=true;try{const n=myPkey.status==='active'?'disabled':'active';// ⚠️ 改用 RPC：状态机、唯一约束保护都在服务端，客户端仅 intent
+const fn=n==='active'?'resume_pool_key':'pause_pool_key';const{error}=await sb.rpc(fn,{p_id:myPkey.id});if(error){if(checkAuthError(error))return;if(error.message&&error.message.includes('another active'))return toast('已有启用中的平台 Key，不能同时启用两把','error');if(error.message&&error.message.includes('no recoverable plaintext'))return toast('这把旧 Key 没有保存可恢复明文，请生成新 Key','error');throw error;}revealedPkey=null;toast(n==='active'?'已启用':'已停用','success');await loadPkey()}catch(e){if(checkAuthError(e))return;toast(e.message||'操作失败','error')}finally{pkeyBusy=false}}
+window.addEventListener('DOMContentLoaded',()=>{if(!window.supabase){document.getElementById('bootTitle').textContent='核心组件加载失败';document.getElementById('bootHint').innerHTML='请检查网络后刷新页面<br><button class="btn btn-small" style="margin-top:10px" onclick="location.reload()">重新加载</button>'}
+// ⚠️ 跟踪用户是否手动编辑过 Base URL；后续重选 provider 时不能静默覆盖
+const fb=document.getElementById('fBaseUrl');if(fb&&!fb.__wiredDirty){fb.__wiredDirty=true;fb.addEventListener('input',()=>{keyUrlTouched=true;});}
+// ⚠️ Tab 键盘导航：Left/Right/Home/End 按 WAI-ARIA tablist 约定；
+// 避免键盘用户只能鼠标点 tab；switchTab() 已负责更新 tabIndex / aria-selected
+const tabBar=document.querySelector('.tab-bar');
+if(tabBar){
+  tabBar.addEventListener('keydown',(e)=>{
+    const tabs=Array.from(tabBar.querySelectorAll('[role="tab"]'));
+    const i=tabs.findIndex(t=>t===document.activeElement);
+    if(i<0) return;
+    let next=i;
+    switch(e.key){
+      case 'ArrowRight': next=(i+1)%tabs.length; break;
+      case 'ArrowLeft':  next=(i-1+tabs.length)%tabs.length; break;
+      case 'Home': next=0; break;
+      case 'End':  next=tabs.length-1; break;
+      default: return;
+    }
+    e.preventDefault();
+    tabs[next].focus();
+    const id=tabs[next].id||'';
+    const m=id.match(/^tab-btn-(.+)$/);
+    if(m) switchTab(m[1]);
+  });
+}
+// ⚠️ Escape 关闭任何打开的模态框；同时掩盖明文 Key
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;['keyModal','contribModal','pkeyModal','resetPwdModal'].forEach(id=>{const el=document.getElementById(id);if(el&&el.classList.contains('show')){el.classList.remove('show');}});if(revealedKeys&&Object.keys(revealedKeys).length){revealedKeys={};const kl=document.getElementById('keyList');if(kl)renderKeys();}if(revealedPkey){revealedPkey=null;if(revealPkeyTimer){clearTimeout(revealPkeyTimer);revealPkeyTimer=null;}}closePkeyModal();closeKeyModal();closeContribModal();closeResetPwdModal();});
+// ⚠️ 页面隐藏 / 切换标签时也掩盖明文，防止肩窥与截图泄露
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){if(revealedKeys&&Object.keys(revealedKeys).length){revealedKeys={};const kl=document.getElementById('keyList');if(kl)renderKeys();}if(document.getElementById('keyModal').classList.contains('show'))closeKeyModal();if(revealedPkey||document.getElementById('newPkeyValue').textContent)closePkeyModal();if(document.getElementById('resetPwdModal').classList.contains('show'))closeResetPwdModal();if(revealPkeyTimer){clearTimeout(revealPkeyTimer);revealPkeyTimer=null;}}});
+});
+// ⚠️ 单一会话应用点：boot 与 onAuthStateChange 共用，避免双源同时驱动 loadKeys() 竞态
+let appliedUserId = null;
+let sessionApplying = false;
+// ⚠️ v5.4：dedupe loadKeys() 并发，但 recovery modal 必须始终触发
+let loadKeysInFlight = null;
+let recoveryModalPending = false;
+let recoveryModalTimer = null;
+async function applySession(s, opts){
+  opts = opts || {};
+  const isRecovery = !!opts.recovery;
+  const sameUser = !!(s && s.user && appliedUserId === s.user.id);
+  // 同用户去重 loadKeys 重复拉取 + DOM 抖动；但 recovery 必须在同用户场景下也触发重置 modal
+  if (sameUser && !isRecovery) return;
+  // 并发 in-flight：recovery 不被丢、非 recovery 复用现有完成动作
+  if (sessionApplying && !isRecovery) return;
+  sessionApplying = true;
+  try {
+    document.getElementById('bootMsg').style.display='none';
+    if (s && s.user) {
+      if (!sameUser) {
+        appliedUserId = s.user.id;
+        currentUserId = s.user.id;
+        const emailEl = document.getElementById('userEmail');
+        emailEl.textContent = s.user.email || '';
+        emailEl.style.display = '';
+        showView('main');
+        // 并发去重：同一用户的 loadKeys 复用 in-flight promise
+        if (!loadKeysInFlight) {
+          loadKeysInFlight = (async () => { try { await loadKeys(); } finally { loadKeysInFlight = null; } })();
+        }
+        await loadKeysInFlight;
+      } else {
+        // 同用户走 recovery：复用 in-flight loadKeys（或不重复拉取）
+        if (loadKeysInFlight) { try { await loadKeysInFlight; } catch {} }
+      }
+      // ⚠️ v5.5：recovery 始终触发弹窗；不静默丢弃 auth event
+      //   注意：仅 PASSWORD_RECOVERY 事件会带 recovery:true；SIGNED_IN / INITIAL_SESSION 都
+      //   走 recovery:false 路径，被 isRecovery gate 过滤，不会触发 reset modal
+      if (isRecovery) {
+        const modal = document.getElementById('resetPwdModal');
+        if (!recoveryModalPending && !(modal && modal.classList.contains('show') && resetPwdStep === 2)) {
+          recoveryModalPending = true;
+          // 避开当前调用栈 + DOM 更新；重复 PASSWORD_RECOVERY 事件只排一个弹窗。
+          recoveryModalTimer = setTimeout(() => {
+            recoveryModalPending = false;
+            recoveryModalTimer = null;
+            try { openResetPwdModal(2); } catch (e) { console.error('recovery modal:', e); }
+          }, 100);
+        }
+      }
+    } else {
+      appliedUserId = null;
+      currentUserId = null;
+      showView('auth');
+      document.getElementById('emailModeRow').style.display='block';
+    }
+  } finally {
+    sessionApplying = false;
+  }
+}
+async function boot(){
+  try{
+    const{data} = await sb.auth.getSession();
+    await applySession(data && data.session, { recovery: false });
+  }catch(e){
+    // getSession 失败（如过期 token 400）也显示登录页，不卡在"页面加载中"
+    console.error('boot error:',e);
+    document.getElementById('bootMsg').style.display='none';
+    showView('auth');
+    document.getElementById('emailModeRow').style.display='block';
+    toast('会话初始化失败，请重新登录','error');
+  }
+}
+// ⚠️ v5.5：onAuthStateChange 单一事件驱动：仅 PASSWORD_RECOVERY 触发 reset modal
+//   SDK 已在 _initialize() 中处理 callback URL（PKCE 自动 exchangeCodeForSession）；
+//   PASSWORD_RECOVERY 是 SDK 在交换成功 / setSession 后由 _notifyAllSubscribers 派发的事件
+sb.auth.onAuthStateChange(async(e, s) => {
+  try {
+    if (e === 'PASSWORD_RECOVERY') {
+      // ⚠️ v5.6：state 校验 — 防钓鱼/伪造 callback URL 在已登录会话里被默默接走。
+      //   送邮件时同会话生 state 存 sessionStorage + 拼 redirectTo；
+      //   回调时比对 URL 中的 state 与 sessionStorage（不同源 → sessionStorage 为空 → 拒绝）。
+      //   清理 URL 上的 state，避免后续被任何脚本读到。
+      const v = validateResetState();
+      try { const u = new URL(location.href); for (const p of ['state','code','type','token_hash','error','error_code','error_description']) u.searchParams.delete(p); history.replaceState(null, '', u.pathname + (u.search ? '?' + u.searchParams.toString() : '') + u.hash); } catch {}
+      consumeResetState();
+      if (!v.ok) {
+        console.error('reset state invalid:', v.reason);
+        toast('重置链接校验失败（可能为钓鱼链接或会话已过期）。请重新申请重置邮件。', 'error');
+        // ⚠️ 不调用 signOut —— 该事件是 SDK 已 setSession 后才派发的，session 可能已被 set。
+        //   仅仅不打开重置 modal；下次会话自动刷新后会重新走普通鉴权路径。
+        //   极端情况：使用者必须手动退出或重新登录。
+        return;
+      }
+      // Supabase 已通过 setSession 写入 session；这里仅驱动重置弹窗
+      await applySession(s, { recovery: true });
+      return;
+    }
+    if (e === 'SIGNED_OUT') {
+      appliedUserId = null;
+      currentUserId = null;
+      recoveryModalPending = false;
+      if (recoveryModalTimer) { clearTimeout(recoveryModalTimer); recoveryModalTimer = null; }
+      showView('auth');
+      document.getElementById('emailModeRow').style.display='block';
+      return;
+    }
+    if (e === 'TOKEN_REFRESHED' && !s) {
+      toast('会话已过期，请重新登录','info');
+      appliedUserId = null;
+      currentUserId = null;
+      recoveryModalPending = false;
+      if (recoveryModalTimer) { clearTimeout(recoveryModalTimer); recoveryModalTimer = null; }
+      showView('auth');
+      document.getElementById('emailModeRow').style.display='block';
+      return;
+    }
+    // INITIAL_SESSION（v2）或 SIGNED_IN：正常渲染（永不打开 reset modal）
+    if (s) {
+      await applySession(s, { recovery: false });
+    }
+  } catch (err) {
+    console.error('auth state error:', err);
+    showView('auth');
+    document.getElementById('emailModeRow').style.display='block';
+  }
+});
+document.getElementById('password').addEventListener('keydown',e=>{if(e.key==='Enter')submitAuth()});
+// ⚠️ v5.5：SDK 单一处理源 — 删除手动 handlePasswordReset() 调用。
+//   PKCE 模式下 SDK 自己在 _initialize() 中处理 ?code=...&type=recovery，无需客户端再调 exchangeCodeForSession
+boot();
+
+async function loadPoints(){
+  const pb=document.getElementById('pointsBalance'),tl=document.getElementById('tierList'),cs=document.getElementById('contribStats'),ll=document.getElementById('ledgerList');
+  // ⚠️ 清空 stale DOM，避免 spinner 与旧内容叠加
+  pb.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  tl.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  cs.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  ll.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  const [balanceRes,ledgerRes,contributedRes,tiersRes,contribRes]=await Promise.all([
+    sb.from('user_points').select('balance').eq('user_id',currentUserId).maybeSingle(),
+    sb.from('points_ledger').select('delta,reason,created_at').eq('user_id',currentUserId).order('created_at',{ascending:false}).limit(20),
+    sb.rpc('get_my_contributed_tokens'),
+    sb.from('reward_tiers').select('level,min_contributed_tokens,daily_quota,perks').order('level',{ascending:true}),
+    sb.from('pool_contributions').select('id,status,total_used_tokens,total_cap_tokens,model_pattern').eq('user_id',currentUserId).order('created_at',{ascending:false})
+  ]);
+  // ⚠️ 鉴权错误优先捕获并跳转；其它错误按 section 分别显示，不一键黑屏
+  const firstAuth=[balanceRes.error,ledgerRes.error,contributedRes.error,tiersRes.error,contribRes.error].find(e=>e&&(e.status===401||(e.message&&e.message.includes('JWT'))));if(firstAuth&&checkAuthError(firstAuth))return;
+  // ⚠️ 修复：一段失败不掩盖其他段；逐段判定 error 后仅对出错段显示错误，成功段继续渲染
+  const okPb=!balanceRes.error;if(balanceRes.error)pb.innerHTML=errorHtml('积分概览加载失败','loadPoints()');
+  const okTl=!tiersRes.error;if(tiersRes.error)tl.innerHTML=errorHtml('等级数据加载失败','loadPoints()');
+  const okCs=!contribRes.error;if(contribRes.error)cs.innerHTML=errorHtml('贡献统计加载失败','loadPoints()');
+  const okLl=!ledgerRes.error;if(ledgerRes.error)ll.innerHTML=errorHtml('积分流水加载失败','loadPoints()');
+  // 全部失败（jwt 以外的其他全局错误）才提前返回；部分是 null/[] 也会被下面代码覆盖
+  if(!okPb&&!okTl&&!okCs&&!okLl)return;
+  const balance=Number((balanceRes.data&&balanceRes.data.balance)||0),led=ledgerRes.data||[],contributed=contributedRes.error?null:Number(contributedRes.data||0),tiers=tiersRes.data||[],contribs=contribRes.data||[];
+  let currentLevel=tiers[0]?tiers[0].level:1,nextTier=null,curTier=tiers[0]||null;
+  // ⚠️ contributed=null 表示 get_my_contributed_tokens 失败；不进行未定义档位判断（避免错误展示「已满级」）
+  if(contributed!==null){for(const t of tiers)if(contributed>=Number(t.min_contributed_tokens)){currentLevel=t.level;curTier=t}for(const t of tiers)if(t.level>currentLevel){nextTier=t;break}}
+  const quota=curTier?Number(curTier.daily_quota):10000000,rpm=curTier?Number((curTier.perks||{}).rpm):60;
+  let oh='<div class="stat-card"><div class="label">累计贡献 token</div><div class="value">'+(contributed===null?'加载失败':fmtCap(contributed))+'</div><div class="hint">成功调用累计，含已撤回贡献</div></div>';
+  oh+='<div class="stat-card"><div class="label">当前档位</div><div class="value">'+(TIER_NAMES[currentLevel]||('L'+currentLevel))+'</div><div class="hint">日额度 '+fmtCap(quota)+' · '+rpm+' rpm</div></div>';
+  if(nextTier&&contributed!==null){const base=Number(curTier&&curTier.min_contributed_tokens||0),target=Number(nextTier.min_contributed_tokens),need=Math.max(0,target-contributed),prog=target>base?Math.min(100,(contributed-base)/(target-base)*100).toFixed(1):'0';oh+='<div class="stat-card"><div class="label">距 '+(TIER_NAMES[nextTier.level]||('L'+nextTier.level))+' 还需</div><div class="value">'+fmtCap(need)+'</div><div class="hint">当前进度 '+prog+'%</div></div>'}else oh+='<div class="stat-card"><div class="label">档位进度</div><div class="value">'+(contributed===null?'—':'已满级')+'</div></div>';
+  oh+='<div class="stat-card"><div class="label">积分余额</div><div class="value">'+Math.round(balance).toLocaleString()+'</div><div class="hint">贡献赚 · 使用花（花 = 赚 × 2，同模型系数）</div>'+(balance<100?'<div class="hint" style="color:var(--danger);margin-top:6px">余额即将耗尽，调用会被拒绝。<a href="#" onclick="switchTab(\'pool\');return false">去贡献赚分</a></div>':'')+'</div>';
+  if(okPb)pb.innerHTML=oh;
+  
+  if(okTl)tl.innerHTML=tiers.length?tiers.map(t=>{const isCur=t.level===currentLevel,unlocked=contributed!==null&&contributed>=Number(t.min_contributed_tokens),label=TIER_NAMES[t.level]||('L'+t.level);return '<div class="key-row"><div class="key-provider">'+label+(isCur?' <span class="badge badge-active">当前</span>':unlocked?' <span class="badge badge-healthy">已解锁</span>':' <span class="badge badge-unknown">未解锁</span>')+'</div><div class="key-url">累计贡献 '+fmtCap(t.min_contributed_tokens)+' · 日 '+fmtCap(t.daily_quota)+' token · '+Number((t.perks||{}).rpm)+' rpm</div></div>'}).join(''):errorHtml('暂无等级数据');
+  const active=contribs.filter(c=>c.status==='active'),activeUsed=active.reduce((s,c)=>s+Number(c.total_used_tokens||0),0),historyUsed=contribs.reduce((s,c)=>s+Number(c.total_used_tokens||0),0),activeHasUnlimited=active.some(c=>!Number(c.total_cap_tokens)),activeCap=active.reduce((s,c)=>s+Number(c.total_cap_tokens||0),0);
+  let ch='<div class="stat-card"><div class="label">启用中的贡献</div><div class="value">'+active.length+'</div></div>';
+  ch+='<div class="stat-card"><div class="label">启用贡献已被使用</div><div class="value">'+fmtCap(activeUsed)+'</div></div>';
+  ch+='<div class="stat-card"><div class="label">历史累计被使用</div><div class="value">'+fmtCap(historyUsed)+'</div><div class="hint">含暂停与已撤回贡献</div></div>';
+  ch+='<div class="stat-card"><div class="label">启用贡献合计上限</div><div class="value">'+(activeHasUnlimited?'含不限':fmtCap(activeCap))+'</div></div>';
+  let usedModels=[],usageError=null;const cids=contribs.map(c=>c.id);if(cids.length){const{data,error}=await sb.from('usage_events').select('model').in('contribution_id',cids).eq('status','success');usageError=error;usedModels=[...new Set((data||[]).map(u=>u.model).filter(Boolean))].sort()}ch+='<div class="stat-card" style="grid-column:1/-1"><div class="label">实际被调用过的贡献模型</div><div style="font-size:13px;margin-top:5px">'+(usageError?'加载失败':usedModels.length?usedModels.map(esc).join('、'):'暂无')+'</div></div>';if(okCs)cs.innerHTML=ch;
+  const reasonMap={usage_reward:['贡献收益','#067647'],usage_spend:['使用消耗','#b42318'],signup_bonus:['注册赠送','#2563eb'],test_refill:['测试补充','#667085']};
+  if(okLl){
+    if(!led.length){ll.innerHTML='<div class="empty">暂无积分流水</div>';}
+    else{
+      const agg={};for(const r of led){const k=r.reason||'other';agg[k]=agg[k]||{sum:0,n:0};agg[k].sum+=Number(r.delta||0);agg[k].n++;}
+      const total=led.reduce((s,r)=>s+Number(r.delta||0),0);
+      ll.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">'
+        +Object.keys(agg).map(k=>{const rm=reasonMap[k]||[k,'var(--dim)'];return '<div class="stat-card"><div class="label">'+esc(rm[0])+'</div><div class="value" style="color:'+rm[1]+'">'+(agg[k].sum>0?'+':'')+Math.round(agg[k].sum).toLocaleString()+' 分</div><div class="hint">最近 '+agg[k].n+' 笔</div></div>'}).join('')
+        +'<div class="stat-card"><div class="label">最近 20 笔净额</div><div class="value" style="color:'+(total>=0?'#067647':'#b42318')+'">'+(total>0?'+':'')+Math.round(total).toLocaleString()+' 分</div><div class="hint">全量余额见上方概览</div></div>'
+        +'</div>'
+        +'<details><summary style="cursor:pointer;color:var(--dim);font-size:13px">查看最近明细（'+led.length+' 条）</summary><div style="margin-top:8px">'
+        +led.map(r=>{const rm=reasonMap[r.reason]||[r.reason,'var(--dim)'],delta=Number(r.delta||0);return '<div class="key-row"><div class="key-provider" style="color:'+rm[1]+'">'+(delta>0?'+':'')+Math.round(delta).toLocaleString()+' 分</div><div class="key-url">'+esc(rm[0])+'</div><div class="key-time">'+new Date(r.created_at).toLocaleString()+'</div></div>'}).join('')
+        +'</div></details>';
+    }
+  }
+}
+
+</script>
+<script>
+// 用量看板：调用次数 / token / 模型分布 / 最近记录（RPC 聚合）
+async function loadUsage(){
+  const us=document.getElementById('usageStats'),bm=document.getElementById('usageByModel'),rc=document.getElementById('usageRecent');
+  // ⚠️ 清空 stale DOM，避免旧内容与新内容叠加
+  us.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  bm.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  rc.innerHTML='<div class="empty pulse"><div class="spinner"></div>加载中…</div>';
+  const{data,error}=await sb.rpc('my_usage_stats');
+  if(error){if(checkAuthError(error))return;us.innerHTML=errorHtml('用量统计加载失败','loadUsage()');bm.innerHTML=errorHtml('模型分布加载失败','loadUsage()');rc.innerHTML=errorHtml('最近调用加载失败','loadUsage()');return}
+  if(!data){us.innerHTML='<div class="empty">暂无调用数据</div>';bm.innerHTML='';rc.innerHTML='';return}
+  us.innerHTML=
+    '<div class="stat-card"><div class="label">成功调用</div><div class="value">'+Number(data.total_calls||0).toLocaleString()+' 次</div></div>'
+    +'<div class="stat-card"><div class="label">总消耗 token</div><div class="value">'+Number(data.total_tokens||0).toLocaleString()+'</div></div>'
+    +'<div class="stat-card"><div class="label">输入 tokens</div><div class="value">'+Number(data.prompt_tokens||0).toLocaleString()+'</div></div>'
+    +'<div class="stat-card"><div class="label">输出 tokens</div><div class="value">'+Number(data.completion_tokens||0).toLocaleString()+'</div></div>';
+  const by=data.by_model||[];
+  bm.innerHTML=by.length?by.map(m=>'<div class="key-row"><div class="key-provider">'+esc(m.model)+'</div><div class="key-url">'+Number(m.calls).toLocaleString()+' 次</div><div class="key-url">'+Number(m.tokens).toLocaleString()+' token</div></div>').join(''):'<div class="empty">暂无成功调用</div>';
+  const rec=data.recent||[];
+  if(!rec.length){rc.innerHTML='<div class="empty">暂无调用记录</div>';}
+  else{
+    const okN=rec.filter(r=>r.status==='success').length;
+    rc.innerHTML='<div class="hint" style="margin-bottom:8px">最近 '+rec.length+' 笔：'+okN+' 成功 · 最后一条 '+new Date(rec[0].created_at).toLocaleString()+'</div>'
+      +'<details><summary style="cursor:pointer;color:var(--dim);font-size:13px">展开明细</summary><div style="margin-top:8px">'
+      +rec.map(r=>{
+        const st=r.status==='success'?'healthy':(r.status==='upstream_error'?'down':'unknown');
+        return '<div class="key-row"><div class="key-provider">'+esc(r.model)+' '+badgeHtml(st,{healthy:'成功',down:'上游错误',unknown:'未知'})+'</div><div class="key-url">'+Number(r.total_tokens).toLocaleString()+' token</div><div class="key-time">'+new Date(r.created_at).toLocaleString()+'</div></div>';
+      }).join('')
+      +'</div></details>';
+  }
+}
+</script>
+</body>
+</html>

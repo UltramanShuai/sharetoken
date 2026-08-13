@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+/tmp/
+*.orig
+*.bak
+*.bak-*
+*.swp
+*.tmp
+
+# 生产配置生成物（由 scripts/apply-config.sh 从 .env 生成）
+public/index.html

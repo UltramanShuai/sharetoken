@@ -1,0 +1,22 @@
+# TokenPool 日度重置（无 BOM，v5.4 部署）
+# 用途：每日 00:05（Asia/Shanghai）清零平台 Key 与贡献的 used_today + 撤回过期贡献
+# 时间语义：CRON_TZ=Asia/Shanghai
+# 防并发：/usr/bin/flock -n（Ubuntu/Debian 自带；如未安装则降级为无锁但 cron 仍保证每日 1 次）
+# 失败策略：脚本退出码 2 / 3 / 4 / 5（详见 scripts/reset-daily.mjs）→ cron 邮件 / 上层监控兜底
+# 文件末尾必须保留一个换行字符（\n）；不要在末尾追加注释、不要添加 UTF-8 BOM（head -c 3 不应是 357 273 277）
+# 部署：
+#   sudo cp /root/project/llm-key-manager/deploy/tokenpool-reset.cron /etc/cron.d/tokenpool-reset
+#   sudo chown root:root /etc/cron.d/tokenpool-reset
+#   sudo chmod 644 /etc/cron.d/tokenpool-reset
+#   # 验证无 BOM：
+#   head -c 3 /etc/cron.d/tokenpool-reset | od -An -c | head -1
+#   # 必须不是 "357 273 277"（UTF-8 BOM）；并且文件末尾有 \n
+#   tail -c 1 /etc/cron.d/tokenpool-reset | od -An -c | head -1
+#   # 期望 "  \\n"
+# 手动预跑：
+#   sudo /usr/bin/node /root/project/llm-key-manager/scripts/reset-daily.mjs ; echo "exit=$?"
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=Asia/Shanghai
+# m h dom mon dow user  command
+5 0 * * * root /usr/bin/flock -n /var/run/tokenpool-reset.lock /usr/bin/node /root/project/llm-key-manager/scripts/reset-daily.mjs >> /var/log/tokenpool-reset.log 2>&1
