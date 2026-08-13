@@ -26,6 +26,8 @@
 
 ## 快速部署
 
+> 完整从零到上线 SOP（含 Supabase/证书/cron/验证清单/FAQ）见 **[deploy/DEPLOY-SOP.md](deploy/DEPLOY-SOP.md)**，以下为速览。
+
 ### 1. Supabase 准备
 
 1. 新建 Supabase 项目（记录 Project URL、service_role key、publishable key）
